@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+coverage/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+/tmp/finiq_models/
+docker/ssl/
+*.joblib
+.DS_Store
