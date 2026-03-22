@@ -87,7 +87,7 @@ export default function TransactionsPage() {
         </div>
 
         {/* Filters */}
-        <div className="glass-static" style={{ padding:'14px 16px',marginBottom:'14px',display:'flex',gap:'10px',flexWrap:'wrap',alignItems:'center' }}>
+        <div className="glass-static" style={{ padding:'14px 16px',marginBottom:'14px',display:'flex',gap:'10px',flexWrap:'wrap',alignItems:'center',position:'relative',zIndex:20 }}>
           <div style={{ display:'flex',alignItems:'center',gap:'8px',background:'var(--glass)',border:'1px solid var(--glass-border)',borderRadius:'10px',padding:'8px 14px',flex:1,minWidth:'200px' }}>
             <Search size={13} color="var(--text3)"/>
             <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="Search merchant or description…"
@@ -108,8 +108,8 @@ export default function TransactionsPage() {
         </div>
 
         {/* Table */}
-        <div className="glass-static" style={{ overflow:'hidden',marginBottom:'24px' }}>
-          <div style={{ display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 80px',gap:'16px',padding:'12px 20px',borderBottom:'1px solid var(--glass-border)',fontSize:'11px',fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.5px' }}>
+        <div className="glass-static" style={{ marginBottom:'24px',overflow:'visible' }}>
+          <div style={{ display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr 80px',gap:'16px',padding:'12px 20px',borderBottom:'1px solid var(--glass-border)',fontSize:'11px',fontWeight:600,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.5px',position:'sticky',top:0,background:'var(--glass)',backdropFilter:'blur(12px)',borderRadius:'18px 18px 0 0',zIndex:5 }}>
             <span>Description</span><span>Category</span><span>Date</span><span>Payment</span><span style={{textAlign:'right'}}>Amount</span><span style={{textAlign:'center'}}>Actions</span>
           </div>
 

@@ -203,85 +203,169 @@ const CARD_GRADIENTS: Record<string, [string,string]> = {
 
 function SingleCard({ card, onDelete }: { card: CardData; onDelete: () => void }) {
   const [flipped, setFlipped] = useState(false);
-  const masked = `**** **** **** ${card.number.replace(/\s/g,'').slice(-4)}`;
+  const num     = card.number.replace(/\s/g,'');
+  const masked  = `**** **** **** ${num.slice(-4)}`;
+  const g       = `linear-gradient(135deg,${card.color[0]},${card.color[1]})`;
 
   return (
-    <div style={{ perspective:'1000px', height:'164px', position:'relative' }}>
-      {/* Delete btn */}
-      <button onClick={onDelete}
-        style={{ position:'absolute',top:8,right:8,zIndex:10,width:24,height:24,borderRadius:'50%',background:'rgba(248,113,113,0.15)',border:'1px solid rgba(248,113,113,0.3)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#f87171',transition:'all 0.15s' }}
-        onMouseEnter={e=>(e.currentTarget.style.background='rgba(248,113,113,0.3)')}
-        onMouseLeave={e=>(e.currentTarget.style.background='rgba(248,113,113,0.15)')}>
-        <X size={11} strokeWidth={2.5}/>
+    <div style={{ height:'170px', position:'relative', borderRadius:'16px', overflow:'hidden', cursor:'pointer' }}
+      onClick={() => setFlipped(f => !f)}>
+
+      {/* Delete — stops propagation so click doesn't flip */}
+      <button
+        onClick={e => { e.stopPropagation(); onDelete(); }}
+        style={{ position:'absolute',top:10,right:10,zIndex:20,width:22,height:22,borderRadius:'50%',background:'rgba(0,0,0,0.35)',border:'1px solid rgba(255,255,255,0.2)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',transition:'background 0.15s' }}
+        onMouseEnter={e => (e.currentTarget.style.background='rgba(248,113,113,0.6)')}
+        onMouseLeave={e => (e.currentTarget.style.background='rgba(0,0,0,0.35)')}>
+        <X size={10} strokeWidth={3}/>
       </button>
 
-      <div onClick={() => setFlipped(!flipped)}
-        style={{ width:'100%',height:'100%',position:'relative',transformStyle:'preserve-3d',transition:'transform 0.55s cubic-bezier(0.4,0,0.2,1)',transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',cursor:'pointer' }}>
+      {/* ── FRONT ── */}
+      <div style={{
+        position:'absolute', inset:0, background:g, padding:'16px 18px', color:'#fff',
+        display:'flex', flexDirection:'column', justifyContent:'space-between',
+        transition:'opacity 0.22s ease, transform 0.22s ease',
+        opacity: flipped ? 0 : 1,
+        transform: flipped ? 'scale(0.96)' : 'scale(1)',
+        pointerEvents: flipped ? 'none' : 'auto',
+      }}>
+        {/* Decorative circles */}
+        <div style={{ position:'absolute',top:'-30px',right:'-30px',width:'110px',height:'110px',background:'rgba(255,255,255,0.06)',borderRadius:'50%',pointerEvents:'none' }}/>
+        <div style={{ position:'absolute',bottom:'-40px',left:'-10px',width:'140px',height:'140px',background:'rgba(255,255,255,0.04)',borderRadius:'50%',pointerEvents:'none' }}/>
 
-        {/* Front */}
-        <div style={{ position:'absolute',inset:0,backfaceVisibility:'hidden',WebkitBackfaceVisibility:'hidden',background:`linear-gradient(135deg,${card.color[0]},${card.color[1]})`,borderRadius:'14px',padding:'18px',color:'#fff',overflow:'hidden',zIndex:2 }}>
-          <div style={{ position:'absolute',top:'-40px',right:'-40px',width:'130px',height:'130px',background:'rgba(255,255,255,0.04)',borderRadius:'50%' }}/>
-          <div style={{ position:'absolute',bottom:'-50px',left:'-20px',width:'160px',height:'160px',background:'rgba(255,255,255,0.03)',borderRadius:'50%' }}/>
-          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'12px' }}>
-            <span style={{ fontSize:'10px',fontWeight:600,letterSpacing:'0.8px',opacity:0.6,textTransform:'uppercase' }}>{card.type.toUpperCase()}</span>
-            <span style={{ fontSize:'9px',background:'rgba(255,255,255,0.12)',padding:'3px 8px',borderRadius:'5px',fontWeight:700,letterSpacing:'0.3px' }}>Premier</span>
-          </div>
-          <div style={{ width:'28px',height:'20px',borderRadius:'4px',background:'linear-gradient(135deg,rgba(255,210,80,0.8),rgba(200,160,40,0.6))',marginBottom:'10px' }}/>
-          <div style={{ fontFamily:'DM Mono,monospace',fontSize:'13px',letterSpacing:'2px',opacity:0.9,marginBottom:'10px' }}>{masked}</div>
-          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-end' }}>
-            <span style={{ fontSize:'12px',fontWeight:600 }}>{card.name}</span>
-            <span style={{ fontSize:'10px',opacity:0.6 }}>{card.expiry}</span>
-          </div>
-          <div style={{ position:'absolute',bottom:8,right:12,fontSize:'9px',opacity:0.3,letterSpacing:'0.5px' }}>tap to flip</div>
+        {/* Top row */}
+        <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+          <span style={{ fontSize:'9px',fontWeight:700,letterSpacing:'1.2px',opacity:0.65,textTransform:'uppercase' }}>{card.type}</span>
+          <span style={{ fontSize:'9px',background:'rgba(255,255,255,0.18)',padding:'2px 8px',borderRadius:'4px',fontWeight:700,letterSpacing:'0.3px' }}>Premier</span>
         </div>
 
-        {/* Back - CVV strip */}
-        <div style={{ position:'absolute',inset:0,backfaceVisibility:'hidden',WebkitBackfaceVisibility:'hidden',transform:'rotateY(180deg)',background:`linear-gradient(135deg,${card.color[0]},${card.color[1]})`,borderRadius:'14px',overflow:'hidden',zIndex:1 }}>
-          <div style={{ background:'rgba(0,0,0,0.4)',height:'38px',margin:'24px 0 16px' }}/>
-          <div style={{ padding:'0 16px' }}>
-            <div style={{ background:'rgba(255,255,255,0.9)',borderRadius:'6px',height:'32px',display:'flex',alignItems:'center',justifyContent:'flex-end',paddingRight:'14px',marginBottom:'8px' }}>
-              <span style={{ fontFamily:'DM Mono,monospace',fontSize:'14px',color:'#1a1a1a',letterSpacing:'3px' }}>•••</span>
+        {/* Chip */}
+        <div style={{ width:'30px',height:'22px',borderRadius:'4px',background:'linear-gradient(135deg,rgba(255,210,80,0.95),rgba(195,155,35,0.8))',boxShadow:'0 1px 3px rgba(0,0,0,0.3)' }}/>
+
+        {/* Number */}
+        <div style={{ fontFamily:'DM Mono,monospace',fontSize:'13.5px',letterSpacing:'2.5px',fontWeight:500 }}>
+          {masked}
+        </div>
+
+        {/* Bottom row */}
+        <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-end' }}>
+          <div>
+            <div style={{ fontSize:'7.5px',opacity:0.45,letterSpacing:'0.6px',textTransform:'uppercase',marginBottom:'3px' }}>Card holder</div>
+            <div style={{ fontSize:'12.5px',fontWeight:600,letterSpacing:'0.3px' }}>{card.name || 'Cardholder'}</div>
+          </div>
+          <div style={{ textAlign:'right' }}>
+            <div style={{ fontSize:'7.5px',opacity:0.45,letterSpacing:'0.6px',textTransform:'uppercase',marginBottom:'3px' }}>Expires</div>
+            <div style={{ fontFamily:'DM Mono,monospace',fontSize:'12px',fontWeight:500 }}>{card.expiry || 'MM/YY'}</div>
+          </div>
+        </div>
+
+        <div style={{ position:'absolute',bottom:6,left:'50%',transform:'translateX(-50%)',fontSize:'8.5px',opacity:0.2,whiteSpace:'nowrap',letterSpacing:'0.4px' }}>tap to flip</div>
+      </div>
+
+      {/* ── BACK ── */}
+      <div style={{
+        position:'absolute', inset:0, background:g, color:'#fff',
+        display:'flex', flexDirection:'column', justifyContent:'space-between',
+        transition:'opacity 0.22s ease, transform 0.22s ease',
+        opacity: flipped ? 1 : 0,
+        transform: flipped ? 'scale(1)' : 'scale(1.03)',
+        pointerEvents: flipped ? 'auto' : 'none',
+      }}>
+        {/* Magnetic stripe */}
+        <div style={{ background:'rgba(0,0,0,0.55)',height:'38px',marginTop:'22px',width:'100%' }}/>
+
+        {/* CVV + info */}
+        <div style={{ padding:'0 18px', display:'flex', flexDirection:'column', gap:'10px' }}>
+          {/* CVV bar */}
+          <div style={{ display:'flex',alignItems:'center',gap:'10px' }}>
+            <div style={{ flex:1,background:'rgba(255,255,255,0.12)',height:'34px',borderRadius:'4px',display:'flex',alignItems:'center',paddingLeft:'10px' }}>
+              <span style={{ fontSize:'7.5px',opacity:0.45,letterSpacing:'0.5px',textTransform:'uppercase' }}>Signature</span>
             </div>
-            <p style={{ fontSize:'9px',color:'rgba(255,255,255,0.4)',textAlign:'right',letterSpacing:'0.3px' }}>CVV</p>
+            <div style={{ width:'60px',background:'rgba(255,255,255,0.93)',borderRadius:'5px',height:'34px',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'2px' }}>
+              <span style={{ fontFamily:'DM Mono,monospace',fontSize:'13px',color:'#111',fontWeight:700,letterSpacing:'3px' }}>•••</span>
+              <span style={{ fontSize:'6.5px',color:'#555',letterSpacing:'0.3px' }}>CVV</span>
+            </div>
           </div>
-          <div style={{ position:'absolute',bottom:8,right:12,fontSize:'9px',opacity:0.3,letterSpacing:'0.5px',color:'#fff' }}>tap to flip</div>
+
+          {/* Card details row */}
+          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+            <div>
+              <div style={{ fontSize:'7.5px',opacity:0.4,letterSpacing:'0.5px',textTransform:'uppercase',marginBottom:'3px' }}>Card number</div>
+              <div style={{ fontFamily:'DM Mono,monospace',fontSize:'11.5px',letterSpacing:'2px',opacity:0.85 }}>{masked}</div>
+            </div>
+            <div style={{ textAlign:'right' }}>
+              <div style={{ fontSize:'7.5px',opacity:0.4,letterSpacing:'0.5px',textTransform:'uppercase',marginBottom:'3px' }}>Valid thru</div>
+              <div style={{ fontFamily:'DM Mono,monospace',fontSize:'11.5px',opacity:0.85 }}>{card.expiry || 'MM/YY'}</div>
+            </div>
+          </div>
+
+          <div style={{ fontSize:'7.5px',opacity:0.3,letterSpacing:'0.3px',lineHeight:1.4 }}>
+            This card is issued subject to the agreement governing its use. Use constitutes acceptance.
+          </div>
         </div>
+
+        <div style={{ position:'absolute',bottom:6,left:'50%',transform:'translateX(-50%)',fontSize:'8.5px',opacity:0.2,whiteSpace:'nowrap',letterSpacing:'0.4px' }}>tap to flip back</div>
       </div>
     </div>
   );
 }
 
 export function FinancesCard({ user }: any) {
-  const [cards, setCards]   = useState<CardData[]>([]);
+  const [cards,  setCards]  = useState<CardData[]>([]);
   const [active, setActive] = useState(0);
   const [adding, setAdding] = useState(false);
-  const [form, setForm]     = useState({ number:'', expiry:'', name: user?.name||'', type:'visa' as const });
+  const [formErr, setFormErr] = useState('');
+  const [form, setForm] = useState({ number:'', expiry:'', name: user?.name||'', type:'visa' as const });
+
+  // Validated expiry input — MM/YY format, MM 01-12, YY >= current year
+  const handleExpiry = (raw: string) => {
+    // Strip non-digits
+    const digits = raw.replace(/\D/g,'').slice(0,4);
+    let out = digits;
+    if (digits.length >= 2) {
+      let mm = parseInt(digits.slice(0,2));
+      if (mm > 12) mm = 12;
+      if (mm < 1 && digits.length === 2) mm = 1;
+      out = String(mm).padStart(2,'0') + (digits.length > 2 ? '/' + digits.slice(2) : (raw.endsWith('/') ? '/' : ''));
+    }
+    setForm(f => ({ ...f, expiry: out }));
+    setFormErr('');
+  };
 
   const addCard = () => {
-    if (!form.number.replace(/\s/g,'').length) return;
+    const num = form.number.replace(/\s/g,'');
+    if (num.length < 12) { setFormErr('Enter a valid card number'); return; }
+    if (!form.expiry.match(/^\d{2}\/\d{2}$/)) { setFormErr('Enter expiry as MM/YY'); return; }
+    const [mm, yy] = form.expiry.split('/').map(Number);
+    const now   = new Date();
+    const curYY = now.getFullYear() % 100;
+    const curMM = now.getMonth() + 1;
+    if (yy < curYY || (yy === curYY && mm < curMM)) { setFormErr('Card has expired'); return; }
+
     const newCard: CardData = {
       id: Date.now().toString(),
       number: form.number,
       expiry: form.expiry,
-      name:   form.name,
-      type:   form.type as 'visa',
-      color:  CARD_GRADIENTS[form.type] as [string,string],
+      name: form.name,
+      type: form.type as 'visa',
+      color: CARD_GRADIENTS[form.type] as [string,string],
     };
     const updated = [...cards, newCard];
     setCards(updated);
     setActive(updated.length - 1);
     setAdding(false);
+    setFormErr('');
     setForm({ number:'', expiry:'', name: user?.name||'', type:'visa' });
   };
 
   const deleteCard = (id: string) => {
     const updated = cards.filter(c => c.id !== id);
     setCards(updated);
-    setActive(Math.min(active, updated.length - 1));
+    setActive(Math.min(active, Math.max(0, updated.length - 1)));
   };
 
-  const inp: React.CSSProperties = { width:'100%', padding:'8px 12px', borderRadius:'9px', border:'1px solid rgba(255,255,255,0.1)', background:'rgba(255,255,255,0.06)', fontSize:'13px', color:'var(--text)', fontFamily:'inherit', outline:'none' };
-  const lbl: React.CSSProperties = { fontSize:'11px', fontWeight:600, color:'var(--text3)', display:'block', marginBottom:'5px', textTransform:'uppercase', letterSpacing:'0.4px' };
+  const inp: React.CSSProperties = { width:'100%', padding:'8px 12px', borderRadius:'9px', border:'1px solid var(--glass-border)', background:'var(--glass)', fontSize:'13px', color:'var(--text)', fontFamily:'inherit', outline:'none', transition:'border-color 0.15s' };
+  const lbl: React.CSSProperties = { fontSize:'11px', fontWeight:600, color:'var(--text2)', display:'block', marginBottom:'5px', textTransform:'uppercase', letterSpacing:'0.4px' };
 
   return (
     <motion.div initial={{ opacity:0,y:16 }} animate={{ opacity:1,y:0 }} transition={{ delay:0.05 }} style={G}
@@ -289,11 +373,11 @@ export function FinancesCard({ user }: any) {
       onMouseLeave={e=>(e.currentTarget.style.background='var(--glass)')}>
 
       <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px' }}>
-        <p style={{ fontSize:'15px',fontWeight:700,color:'var(--text)' }}>My Cards</p>
-        <button onClick={() => setAdding(!adding)}
-          style={{ display:'flex',alignItems:'center',gap:'5px',fontSize:'12px',color:'#2dd4bf',background:'rgba(45,212,191,0.1)',border:'1px solid rgba(45,212,191,0.2)',borderRadius:'20px',padding:'4px 10px',cursor:'pointer',fontFamily:'inherit',fontWeight:500,transition:'all 0.15s' }}
-          onMouseEnter={e=>(e.currentTarget.style.background='rgba(45,212,191,0.18)')}
-          onMouseLeave={e=>(e.currentTarget.style.background='rgba(45,212,191,0.1)')}>
+        <p style={{ fontSize:'15px',fontWeight:700,color:'var(--text)',margin:0 }}>My Cards</p>
+        <button onClick={() => { setAdding(!adding); setFormErr(''); }}
+          style={{ display:'flex',alignItems:'center',gap:'5px',fontSize:'12px',color:'var(--accent)',background:'var(--accent-dim)',border:'1px solid var(--accent-dim)',borderRadius:'20px',padding:'4px 10px',cursor:'pointer',fontFamily:'inherit',fontWeight:500,transition:'background 0.15s' }}
+          onMouseEnter={e=>(e.currentTarget.style.background='var(--glass-strong)')}
+          onMouseLeave={e=>(e.currentTarget.style.background='var(--accent-dim)')}>
           {adding ? <X size={12}/> : <Plus size={12}/>}
           {adding ? 'Cancel' : 'Add card'}
         </button>
@@ -303,59 +387,83 @@ export function FinancesCard({ user }: any) {
         {adding ? (
           <motion.div key="form" initial={{ opacity:0,y:8 }} animate={{ opacity:1,y:0 }} exit={{ opacity:0,y:-8 }}
             style={{ display:'flex',flexDirection:'column',gap:'10px' }}>
+            {formErr && (
+              <div style={{ fontSize:'12px',color:'var(--accent3)',background:'var(--accent3-dim)',padding:'7px 10px',borderRadius:'8px',border:'1px solid var(--accent3-dim)' }}>
+                {formErr}
+              </div>
+            )}
             <div>
               <label style={lbl}>Card number</label>
               <input value={form.number}
-                onChange={e => setForm(f => ({ ...f, number: e.target.value.replace(/[^\d]/g,'').replace(/(.{4})/g,'$1 ').trim().slice(0,19) }))}
-                placeholder="1234 5678 9012 3456" style={{ ...inp, fontFamily:'DM Mono,monospace', letterSpacing:'1.5px' }}/>
+                onChange={e => { setFormErr(''); setForm(f => ({ ...f, number: e.target.value.replace(/[^\d]/g,'').replace(/(.{4})/g,'$1 ').trim().slice(0,19) })); }}
+                placeholder="1234 5678 9012 3456"
+                style={{ ...inp, fontFamily:'DM Mono,monospace', letterSpacing:'1.5px' }}
+                onFocus={e => (e.currentTarget.style.borderColor='var(--accent)')}
+                onBlur={e  => (e.currentTarget.style.borderColor='var(--glass-border)')}/>
             </div>
             <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px' }}>
               <div>
-                <label style={lbl}>Expiry</label>
-                <input value={form.expiry} onChange={e=>setForm(f=>({...f,expiry:e.target.value}))} placeholder="MM/YY" maxLength={5} style={inp}/>
+                <label style={lbl}>Expiry (MM/YY)</label>
+                <input value={form.expiry} onChange={e => handleExpiry(e.target.value)}
+                  placeholder="MM/YY" maxLength={5} style={{ ...inp, fontFamily:'DM Mono,monospace', letterSpacing:'1px' }}
+                  onFocus={e => (e.currentTarget.style.borderColor='var(--accent)')}
+                  onBlur={e  => (e.currentTarget.style.borderColor='var(--glass-border)')}/>
               </div>
               <div>
                 <label style={lbl}>Network</label>
-                <select value={form.type} onChange={e=>setForm(f=>({...f,type:e.target.value as 'visa'}))} style={inp}>
-                  {['visa','mastercard','rupay','amex'].map(t=><option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
+                <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as 'visa' }))}
+                  style={inp}
+                  onFocus={e => (e.currentTarget.style.borderColor='var(--accent)')}
+                  onBlur={e  => (e.currentTarget.style.borderColor='var(--glass-border)')}>
+                  {['visa','mastercard','rupay','amex'].map(t => (
+                    <option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>
+                  ))}
                 </select>
               </div>
             </div>
             <div>
               <label style={lbl}>Name on card</label>
-              <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Full name" style={inp}/>
+              <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Full name" style={inp}
+                onFocus={e => (e.currentTarget.style.borderColor='var(--accent)')}
+                onBlur={e  => (e.currentTarget.style.borderColor='var(--glass-border)')}/>
             </div>
             <button onClick={addCard}
-              style={{ background:'#2dd4bf',color:'#0d1117',border:'none',borderRadius:'9px',padding:'9px',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'filter 0.15s' }}
-              onMouseEnter={e=>(e.currentTarget.style.filter='brightness(1.1)')}
-              onMouseLeave={e=>(e.currentTarget.style.filter='none')}>
+              style={{ background:'var(--accent)',color:'#fff',border:'none',borderRadius:'9px',padding:'9px',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'filter 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.filter='brightness(1.1)')}
+              onMouseLeave={e => (e.currentTarget.style.filter='none')}>
               Save card
             </button>
           </motion.div>
         ) : cards.length === 0 ? (
           <motion.div key="empty" initial={{ opacity:0 }} animate={{ opacity:1 }}
-            style={{ textAlign:'center',padding:'28px 0',border:'2px dashed rgba(255,255,255,0.08)',borderRadius:'14px' }}>
-            <CreditCard size={28} color="rgba(255,255,255,0.15)" style={{ margin:'0 auto 10px',display:'block' }}/>
-            <p style={{ fontSize:'13px',color:'var(--text3)',lineHeight:1.5 }}>No cards added yet.<br/>Click "Add card" to get started.</p>
+            style={{ textAlign:'center',padding:'28px 0',border:'2px dashed var(--glass-border)',borderRadius:'14px' }}>
+            <CreditCard size={28} color="var(--text3)" style={{ margin:'0 auto 10px',display:'block' }}/>
+            <p style={{ fontSize:'13px',color:'var(--text3)',lineHeight:1.5,margin:0 }}>No cards added.<br/>Click "Add card" to get started.</p>
           </motion.div>
         ) : (
           <motion.div key="cards" initial={{ opacity:0 }} animate={{ opacity:1 }}>
             <SingleCard card={cards[active]} onDelete={() => deleteCard(cards[active].id)}/>
             {cards.length > 1 && (
-              <div style={{ display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginTop:'12px' }}>
+              <div style={{ display:'flex',alignItems:'center',justifyContent:'center',gap:'8px',marginTop:'10px' }}>
                 <button onClick={() => setActive(a => Math.max(0,a-1))} disabled={active===0}
-                  style={{ width:24,height:24,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.06)',cursor:active===0?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.4)',opacity:active===0?0.3:1 }}>
-                  <ChevronLeft size={13}/>
+                  style={{ width:22,height:22,borderRadius:'50%',border:'none',background:'var(--glass)',cursor:active===0?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--text2)',opacity:active===0?0.3:1,transition:'background 0.15s' }}
+                  onMouseEnter={e => { if(active>0) e.currentTarget.style.background='var(--glass-hover)'; }}
+                  onMouseLeave={e => (e.currentTarget.style.background='var(--glass)')}>
+                  <ChevronLeft size={12}/>
                 </button>
-                {cards.map((_,i)=>(
-                  <button key={i} onClick={()=>setActive(i)}
-                    style={{ width:6,height:6,borderRadius:'50%',border:'none',cursor:'pointer',transition:'all 0.2s',
-                      background: i===active?'#2dd4bf':'rgba(255,255,255,0.2)',
-                      transform: i===active?'scale(1.3)':'scale(1)' }}/>
+                {cards.map((_,i) => (
+                  <button key={i} onClick={() => setActive(i)}
+                    style={{ width:6,height:6,borderRadius:'50%',border:'none',cursor:'pointer',transition:'all 0.2s',padding:0,
+                      background: i===active ? 'var(--accent)' : 'var(--glass-strong)',
+                      transform: i===active ? 'scale(1.4)' : 'scale(1)',
+                    }}/>
                 ))}
                 <button onClick={() => setActive(a => Math.min(cards.length-1,a+1))} disabled={active===cards.length-1}
-                  style={{ width:24,height:24,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.06)',cursor:active===cards.length-1?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'rgba(255,255,255,0.4)',opacity:active===cards.length-1?0.3:1 }}>
-                  <ChevronRight size={13}/>
+                  style={{ width:22,height:22,borderRadius:'50%',border:'none',background:'var(--glass)',cursor:active===cards.length-1?'not-allowed':'pointer',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--text2)',opacity:active===cards.length-1?0.3:1,transition:'background 0.15s' }}
+                  onMouseEnter={e => { if(active<cards.length-1) e.currentTarget.style.background='var(--glass-hover)'; }}
+                  onMouseLeave={e => (e.currentTarget.style.background='var(--glass)')}>
+                  <ChevronRight size={12}/>
                 </button>
               </div>
             )}
