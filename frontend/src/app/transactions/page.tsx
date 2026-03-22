@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import AppShell from '@/components/layout/AppShell';
 import AddExpenseModal from '@/components/dashboard/AddExpenseModal';
 import { MonthPicker } from '@/components/ui/DatePicker';
+import { Select } from '@/components/ui/Select';
 
 const PAY: Record<string,string> = { upi:'UPI',card:'Card',netbanking:'Net Banking',cash:'Cash',wallet:'Wallet',other:'Other' };
 const fmt = (n: number) => '₹' + Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -50,7 +51,6 @@ export default function TransactionsPage() {
   const income  = txs.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
   const expense = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
 
-  const sel: React.CSSProperties = { padding:'8px 12px',borderRadius:'10px',border:'1px solid var(--glass-border)',background:'var(--glass)',fontSize:'13px',fontFamily:'inherit',color:'var(--text)',outline:'none' };
 
   if (authLoading||!user) return null;
 
@@ -94,15 +94,10 @@ export default function TransactionsPage() {
               style={{ background:'none',border:'none',outline:'none',fontFamily:'inherit',fontSize:'13px',color:'var(--text)',width:'100%' }}/>
             {search && <button onClick={()=>setSearch('')} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text3)',padding:0 }}><X size={13}/></button>}
           </div>
-          <select value={typeFilt} onChange={e=>{setTypeFilt(e.target.value);setPage(1);}} style={sel}>
-            <option value="">All types</option>
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </select>
-          <select value={catFilt} onChange={e=>{setCatFilt(e.target.value);setPage(1);}} style={sel}>
-            <option value="">All categories</option>
-            {cats.map((c:any)=><option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
+          <Select value={typeFilt} onChange={v=>{setTypeFilt(v);setPage(1);}}
+            options={[{value:'',label:'All types'},{value:'expense',label:'Expense'},{value:'income',label:'Income'},{value:'transfer',label:'Transfer'}]}/>
+          <Select value={catFilt} onChange={v=>{setCatFilt(v);setPage(1);}}
+            options={[{value:'',label:'All categories'},...cats.map((c:any)=>({value:c.id,label:c.name}))]}/>
           <MonthPicker value={month} onChange={v=>{setMonth(v);setPage(1);}}/>
           {(search||typeFilt||catFilt||month) && (
             <button onClick={()=>{setSearch('');setTypeFilt('');setCatFilt('');setMonth(undefined);setPage(1);}}
