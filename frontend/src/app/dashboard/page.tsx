@@ -63,7 +63,7 @@ export default function DashboardPage() {
         {/* Header */}
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px' }}>
           <div>
-            <h1 style={{ fontSize:'26px', fontWeight:700, letterSpacing:'-0.5px', color:'var(--text)' }}>
+            <h1 style={{ fontSize:'26px', fontWeight:700, letterSpacing:'-0.5px', color:'var(--text)', margin:0 }}>
               {getGreeting()}, {user?.name?.split(' ')[0]}
             </h1>
             <p style={{ fontSize:'13px', color:'var(--text2)', marginTop:'3px' }}>{dateStr}</p>
@@ -71,11 +71,11 @@ export default function DashboardPage() {
           <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
             <MonthPicker value={month} onChange={setMonth}/>
             <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }} onClick={handleExport}
-              style={{ display:'flex',alignItems:'center',gap:'7px',padding:'9px 18px',borderRadius:'50px',background:'#fff',color:'var(--text)',border:'1px solid rgba(0,0,0,0.08)',fontSize:'13.5px',fontWeight:500,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+              style={{ display:'flex',alignItems:'center',gap:'7px',padding:'9px 18px',borderRadius:'50px',background:'var(--glass)',color:'var(--text)',border:'1px solid var(--glass-border)',fontSize:'13.5px',fontWeight:500,cursor:'pointer',fontFamily:'inherit',boxShadow:'var(--shadow)' }}>
               <Download size={14} strokeWidth={2}/> Export
             </motion.button>
             <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }} onClick={()=>setShowModal(true)}
-              style={{ display:'flex',alignItems:'center',gap:'7px',padding:'9px 20px',borderRadius:'50px',background:'var(--teal)',color:'#fff',border:'none',fontSize:'13.5px',fontWeight:600,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 14px rgba(15,118,110,0.3)' }}>
+              style={{ display:'flex',alignItems:'center',gap:'7px',padding:'9px 20px',borderRadius:'50px',background:'var(--accent)',color:'#fff',border:'none',fontSize:'13.5px',fontWeight:600,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 16px var(--accent-dim)' }}>
               <Plus size={14} strokeWidth={2.5}/> Add Expense
             </motion.button>
           </div>

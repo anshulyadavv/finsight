@@ -1,5 +1,5 @@
 'use client';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,7 +13,6 @@ const ROUTE_MAP: Record<string, string> = {
   '/transactions': 'Transactions',
   '/insights':     'Insights',
   '/predictions':  'Predictions',
-  '/settings':     'Dashboard',
 };
 
 const TAB_ROUTES: Record<string, string> = {
@@ -39,7 +38,7 @@ export default function AppShell({ children }: Props) {
   };
 
   if (loading) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--bg)' }}>
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--bg)', transition:'background 0.3s' }}>
       <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'16px' }}>
         <svg width="40" height="40" viewBox="0 0 28 28" fill="none">
           <rect width="28" height="28" rx="8" fill="#0f766e" opacity="0.1"/>
