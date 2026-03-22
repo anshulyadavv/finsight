@@ -42,9 +42,9 @@
   --bg:            #f3f4f6;
   --bg2:           #e5e7eb;
   --bg3:           #d1d5db;
-  --glass:         rgba(255,255,255,0.70);
+  --glass:         rgba(255,255,255,0.80);
   --glass-hover:   rgba(255,255,255,0.85);
-  --glass-border:  rgba(0,0,0,0.08);
+  --glass-border:  rgba(0,0,0,0.12);
   --glass-strong:  rgba(0,0,0,0.06);
   --surface:       #ffffff;
   --surface2:      rgba(255,255,255,0.9);
@@ -58,9 +58,9 @@
   --amber:         #d97706;
   --amber-dim:     rgba(217,119,6,0.10);
 
-  --text:          #111827;
-  --text2:         #6b7280;
-  --text3:         #d1d5db;
+  --text:          #0f172a;
+  --text2:         #374151;
+  --text3:         #9ca3af;
 
   --shadow:        0 4px 20px rgba(0,0,0,0.08);
   --shadow-hover:  0 8px 28px rgba(0,0,0,0.13);
