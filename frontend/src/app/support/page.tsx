@@ -1,9 +1,9 @@
 'use client';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { ChevronDown, ChevronRight, Mail, MessageCircle, BookOpen, Zap } from 'lucide-react';
-import Footer from '@/components/layout/Footer';
+import { ChevronDown, ChevronRight, Mail, MessageCircle, BookOpen, Zap, ArrowLeft, ChevronUp } from 'lucide-react';
+import Logo from '@/components/ui/Logo';
 
 const FAQS = [
   {
@@ -40,101 +40,159 @@ const FAQS = [
   },
 ];
 
-function FAQ({ q, a }: { q: string; a: string }) {
+function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderBottom: '1px solid var(--glass-border)' }}>
+    <div className="border-b border-gray-100 last:border-0">
       <button
         onClick={() => setOpen(!open)}
-        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', gap: '16px' }}
+        className="w-full flex items-center justify-between py-6 text-left group transition-all"
       >
-        <span style={{ fontSize: '14.5px', fontWeight: 500, color: 'var(--text)', lineHeight: 1.4 }}>{q}</span>
-        <ChevronDown size={16} color="var(--text3)" strokeWidth={2} style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}/>
+        <span className="text-[16px] font-bold text-gray-900 group-hover:text-violet-600 transition-colors tracking-tight leading-snug pr-8">
+          {q}
+        </span>
+        <div className={`flex-shrink-0 w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center transition-transform duration-300 ${open ? 'rotate-180 bg-violet-50 text-violet-600' : 'text-gray-400'}`}>
+          <ChevronDown size={18} />
+        </div>
       </button>
-      {open && (
-        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}>
-          <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: 1.7, paddingBottom: '16px', margin: 0 }}>{a}</p>
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }} 
+            animate={{ opacity: 1, height: 'auto' }} 
+            exit={{ opacity: 0, height: 0 }} 
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <p className="text-[15px] text-gray-500 font-medium leading-relaxed pb-6 tracking-tight">
+              {a}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 export default function SupportPage() {
   const CARDS = [
-    { icon: Mail,          title: 'Email Support',   desc: 'Get help from our team within 24 hours',       action: 'support@finsight.app',    href: 'mailto:support@finsight.app' },
-    { icon: BookOpen,      title: 'Documentation',   desc: 'API docs, guides, and integration examples',   action: 'View API Docs →',          href: '/api/docs' },
-    { icon: MessageCircle, title: 'Bug Reports',     desc: 'Found a bug? Report it and help us improve',   action: 'bugs@finsight.app',        href: 'mailto:bugs@finsight.app' },
-    { icon: Zap,           title: 'Feature Requests',desc: 'Suggest new features or improvements',         action: 'feedback@finsight.app',    href: 'mailto:feedback@finsight.app' },
+    { icon: Mail,          title: 'Email Support',   desc: 'Get help from our team within 24 hours',       action: 'support@finsight.app',    href: 'mailto:support@finsight.app', color: 'bg-violet-50 text-violet-600' },
+    { icon: BookOpen,      title: 'Documentation',   desc: 'API docs, guides, and integration examples',   action: 'View API Docs',          href: '#', color: 'bg-blue-50 text-blue-600' },
+    { icon: MessageCircle, title: 'Bug Reports',     desc: 'Found a bug? Report it and help us improve',   action: 'bugs@finsight.app',        href: 'mailto:bugs@finsight.app', color: 'bg-emerald-50 text-emerald-600' },
+    { icon: Zap,           title: 'Feature Requests',desc: 'Suggest new features or improvements',         action: 'feedback@finsight.app',    href: 'mailto:feedback@finsight.app', color: 'bg-amber-50 text-amber-600' },
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)', display: 'flex', flexDirection: 'column' }}>
-      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 32px', borderBottom: '1px solid var(--glass-border)', background: 'var(--glass)', backdropFilter: 'blur(20px)' }}>
-        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '9px', textDecoration: 'none' }}>
-          <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
-            <rect width="28" height="28" rx="8" fill="#818cf8" opacity="0.15"/>
-            <rect x="5" y="16" width="4" height="8" rx="2" fill="#818cf8"/>
-            <rect x="12" y="10" width="4" height="14" rx="2" fill="#34d399"/>
-            <rect x="19" y="4" width="4" height="20" rx="2" fill="#fb7185"/>
-          </svg>
-          <span style={{ fontSize: '16px', fontWeight: 700, background: 'linear-gradient(135deg,#818cf8,#34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FinSight</span>
-        </Link>
-        <Link href="/dashboard" style={{ fontSize: '13px', color: 'var(--accent)', fontWeight: 500, textDecoration: 'none' }}>← Back to Dashboard</Link>
-      </nav>
+    <div className="min-h-screen bg-[#FBFBFC] text-gray-900 font-sans overflow-x-hidden selection:bg-violet-200 selection:text-violet-900 relative">
+      {/* Noise Overlay */}
+      <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E')" }} />
+      
+      {/* Animated Background Mesh */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+         <motion.div 
+           animate={{ scale: [1, 1.1, 1], rotate: [0, 45, 0] }}
+           transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+           className="absolute top-[-10%] left-[10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-violet-300/30 to-fuchsia-300/30 blur-[120px] mix-blend-multiply" 
+         />
+         <motion.div 
+           animate={{ scale: [1, 1.2, 1], rotate: [0, -45, 0] }}
+           transition={{ duration: 20, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+           className="absolute top-[20%] right-[-5%] w-[700px] h-[700px] rounded-full bg-gradient-to-bl from-emerald-300/20 to-teal-200/20 blur-[130px] mix-blend-multiply" 
+         />
+      </div>
 
-      <main style={{ flex: 1, maxWidth: '800px', margin: '0 auto', padding: '48px 24px', width: '100%' }}>
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-          <div style={{ marginBottom: '40px', textAlign: 'center' }}>
-            <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '10px' }}>Help Center</p>
-            <h1 style={{ fontSize: '34px', fontWeight: 800, letterSpacing: '-0.8px', color: 'var(--text)', marginBottom: '12px' }}>How can we help?</h1>
-            <p style={{ fontSize: '15px', color: 'var(--text2)', maxWidth: '480px', margin: '0 auto', lineHeight: 1.6 }}>
-              Find answers to common questions, contact support, or browse our documentation.
+      <header className="relative z-50 pt-8 px-6">
+        <div className="flex items-center justify-between max-w-[1200px] mx-auto pointer-events-auto">
+          <Link href="/" className="z-10 group focus:outline-none">
+            <Logo />
+          </Link>
+          <div className="flex items-center gap-8 z-10">
+            <Link href="/" className="text-[14px] font-bold text-gray-500 hover:text-gray-900 flex items-center gap-2 transition-colors">
+              <ArrowLeft size={16} /> Back to Home
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative z-10 max-w-[900px] mx-auto pt-24 pb-32 px-6">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <div className="mb-16 text-center">
+            <p className="text-[12px] font-black text-violet-600 uppercase tracking-[0.2em] mb-4">Help Center</p>
+            <h1 className="text-[48px] md:text-[72px] font-black tracking-tight leading-none text-gray-900 mb-6">
+              How can we help?
+            </h1>
+            <p className="text-[18px] font-medium text-gray-500 tracking-tight max-w-[500px] mx-auto leading-relaxed">
+              Find answers to common questions about our AI engine, sync logic, and security stack.
             </p>
           </div>
 
-          {/* Contact cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '12px', marginBottom: '48px' }}>
-            {CARDS.map(({ icon: Icon, title, desc, action, href }) => (
-              <a key={title} href={href}
-                style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', padding: '20px', textDecoration: 'none', borderRadius: '16px', background: 'var(--glass)', border: '1px solid var(--glass-border)', transition: 'all 0.15s', backdropFilter: 'blur(20px)' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--glass-hover)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-1px)'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--glass)'; (e.currentTarget as HTMLElement).style.transform = 'none'; }}>
-                <div style={{ width: 40, height: 40, borderRadius: '11px', background: 'var(--accent-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={18} color="var(--accent)" strokeWidth={2}/>
-                </div>
+          {/* Contact cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-20">
+            {CARDS.map(({ icon: Icon, title, desc, action, href, color }) => (
+              <Link 
+                key={title} 
+                href={href}
+                className="group p-8 bg-white rounded-[28px] border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between min-h-[220px]"
+              >
                 <div>
-                  <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', margin: '0 0 4px' }}>{title}</p>
-                  <p style={{ fontSize: '12.5px', color: 'var(--text2)', margin: '0 0 8px', lineHeight: 1.4 }}>{desc}</p>
-                  <span style={{ fontSize: '12.5px', color: 'var(--accent)', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {action} <ChevronRight size={12} strokeWidth={2.5}/>
-                  </span>
+                  <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center mb-6 shadow-sm ${color}`}>
+                    <Icon size={22} strokeWidth={2.5} />
+                  </div>
+                  <h3 className="text-[20px] font-black text-gray-900 tracking-tight mb-2">{title}</h3>
+                  <p className="text-[14px] text-gray-500 font-medium leading-relaxed tracking-tight mb-6">{desc}</p>
                 </div>
-              </a>
+                <div className="flex items-center gap-2 text-[14px] font-bold text-gray-900 group-hover:gap-3 transition-all">
+                  {action} <ChevronRight size={14} className="text-gray-400 group-hover:text-gray-900" strokeWidth={3} />
+                </div>
+                {/* Subtle Decorative Orb */}
+                <div className={`absolute -right-10 -bottom-10 w-32 h-32 rounded-full opacity-10 blur-2xl group-hover:scale-150 transition-transform duration-700 ${color.split(' ')[0]}`} />
+              </Link>
             ))}
           </div>
 
-          {/* FAQ */}
-          <div className="glass-static" style={{ padding: '28px 32px', borderRadius: '20px', marginBottom: '32px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>Frequently Asked Questions</h2>
-            <p style={{ fontSize: '13.5px', color: 'var(--text2)', marginBottom: '24px' }}>Answers to the most common questions about FinSight</p>
-            {FAQS.map((faq, i) => <FAQ key={i} {...faq}/>)}
+          {/* FAQ Section */}
+          <div className="bg-white rounded-[32px] p-8 md:p-12 border border-gray-100 shadow-sm mb-16 relative overflow-hidden">
+            <div className="mb-10">
+              <h2 className="text-[28px] font-black text-gray-900 tracking-tight mb-2">Frequently Asked Questions</h2>
+              <p className="text-[15px] text-gray-500 font-medium tracking-tight">The technical details behind FinSight’s intelligence.</p>
+            </div>
+            <div className="space-y-2">
+              {FAQS.map((faq, i) => (
+                <FAQItem key={i} {...faq} index={i} />
+              ))}
+            </div>
           </div>
 
-          {/* Still need help */}
-          <div style={{ textAlign: 'center', padding: '28px', background: 'var(--accent-dim)', borderRadius: '16px', border: '1px solid var(--accent-dim)' }}>
-            <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text)', marginBottom: '6px' }}>Still need help?</p>
-            <p style={{ fontSize: '13.5px', color: 'var(--text2)', marginBottom: '16px' }}>Our support team is available Mon–Fri, 9am–6pm IST.</p>
-            <a href="mailto:support@finsight.app"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 22px', borderRadius: '50px', background: 'var(--accent)', color: '#fff', fontSize: '14px', fontWeight: 600, textDecoration: 'none', transition: 'filter 0.15s' }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.filter = 'brightness(1.1)')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.filter = 'none')}>
-              <Mail size={15} strokeWidth={2}/> Email Support
+          {/* Still need help CTA */}
+          <div className="text-center p-12 bg-gray-900 rounded-[32px] shadow-2xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+            <p className="text-[14px] font-black text-white/50 uppercase tracking-[0.2em] mb-4 relative z-10">Still need help?</p>
+            <h2 className="text-[28px] md:text-[36px] font-black text-white tracking-tight mb-2 relative z-10">Talk to our engineering team</h2>
+            <p className="text-[16px] text-white/60 font-medium mb-10 relative z-10">Available Mon–Fri, 9am–6pm IST. We respond to all technical queries within 24h.</p>
+            <a 
+              href="mailto:support@finsight.app"
+              className="inline-flex items-center gap-3 bg-white text-gray-900 px-10 py-5 rounded-full text-[16px] font-bold hover:scale-105 active:scale-95 transition-all shadow-xl relative z-10"
+            >
+              <Mail size={18} strokeWidth={2.5} />
+              Contact Support
             </a>
+          </div>
+          
+          {/* Minimalist White Circle Back to Top Arrow */}
+          <div className="flex justify-end pt-8 pb-12">
+            <button 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="group w-12 h-12 rounded-full bg-white border border-gray-100 shadow-sm flex items-center justify-center hover:border-gray-200 transition-all focus:outline-none"
+              aria-label="Back to top"
+            >
+              <ChevronUp className="text-gray-400 group-hover:text-gray-900 transition-colors" size={20} strokeWidth={3} />
+            </button>
           </div>
         </motion.div>
       </main>
-      <Footer/>
     </div>
   );
 }

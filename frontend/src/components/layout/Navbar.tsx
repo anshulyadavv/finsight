@@ -1,146 +1,377 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bell, Search, Sun, Moon, LogOut, User as UserIcon, X, Check, Trash2, TrendingUp, Lightbulb, Tag, Zap } from 'lucide-react';
 import Link from 'next/link';
-import { Bell, Search, Settings, LogOut, User, ChevronDown, Sun, Moon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import Logo from '@/components/ui/Logo';
 import { useTheme } from '@/hooks/useTheme';
+import { searchApi, notificationsApi } from '@/lib/api';
+import { useCurrency } from '@/hooks/useCurrency';
+import { useOnClickOutside } from '@/hooks/useOnClickOutside';
 
-const TABS = ['Dashboard', 'Transactions', 'Insights', 'Predictions'];
+interface Props {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+}
 
-export default function Navbar({ activeTab, onTabChange }: { activeTab: string; onTabChange: (t: string) => void }) {
+export default function Navbar({ activeTab, onTabChange }: Props) {
   const { user, logout } = useAuth();
   const { theme, toggle } = useTheme();
-  const router  = useRouter();
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [showMenu, setShowMenu] = useState(false);
-  const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2) || 'U';
-  const dark = theme === 'dark';
+  const { fmt } = useCurrency();
 
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  // Search State
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any>(null);
+  const [searching, setSearching] = useState(false);
+
+  // Notification State
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Refs for click-outside
+  const searchRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const userDispRef = useRef<HTMLDivElement>(null);
+  const rightColumnRef = useRef<HTMLDivElement>(null);
+  const [searchMaxWidth, setSearchMaxWidth] = useState(220);
+
+  useOnClickOutside(searchRef, () => setSearchOpen(false));
+  useOnClickOutside(notifRef, () => setNotificationsOpen(false));
+  useOnClickOutside(userDispRef, () => setDropdownOpen(false));
+
+  // Measure available space for search bar expansion
   useEffect(() => {
-    const h = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false);
+    const measure = () => {
+      if (!rightColumnRef.current || !searchRef.current) return;
+      const colWidth = rightColumnRef.current.getBoundingClientRect().width;
+      // icons after search: theme(44) + bell(44) + avatar(56) + gaps(3×12) = 180px
+      const reservedForIcons = 180;
+      const available = colWidth - reservedForIcons - 16; // 16px breathing room
+      setSearchMaxWidth(Math.max(44, Math.min(available, 320)));
     };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
   }, []);
 
-  const navBg  = dark ? 'rgba(22,27,34,0.85)'    : 'rgba(255,255,255,0.85)';
-  const border = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-  const menuBg = dark ? '#161b22' : '#fff';
-  const divider= dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
+  // The actual functional tabs of the application
+  const tabs = ['Dashboard', 'Transactions', 'Insights', 'Predictions'];
 
-  const itemHover = (e: React.MouseEvent<HTMLButtonElement>, enter: boolean) => {
-    e.currentTarget.style.background = enter
-      ? dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'
-      : 'none';
+  // ─── Search Logic ────────────────────────────────────────────────────────
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery.length > 1) handleSearch();
+      else setSearchResults(null);
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  const handleSearch = async () => {
+    setSearching(true);
+    try {
+      const { data } = await searchApi.global(searchQuery);
+      setSearchResults(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSearching(false);
+    }
   };
-  const dangerHover = (e: React.MouseEvent<HTMLButtonElement>, enter: boolean) => {
-    e.currentTarget.style.background = enter
-      ? dark ? 'rgba(251,113,133,0.08)' : 'rgba(225,29,72,0.06)'
-      : 'none';
+
+  // ─── Notification Logic ──────────────────────────────────────────────────
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const { data } = await notificationsApi.list();
+      const list = Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []);
+      setNotifications(list);
+      setUnreadCount(list.filter((n: any) => !n.isRead).length);
+    } catch (e) {
+      console.error(e);
+      setNotifications([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      const interval = setInterval(fetchNotifications, 30000); // 30s poll
+      return () => clearInterval(interval);
+    }
+  }, [user, fetchNotifications]);
+
+  const markRead = async (id: string) => {
+    await notificationsApi.read(id);
+    fetchNotifications();
+  };
+
+  const archiveNotify = async (id: string) => {
+    await notificationsApi.archive(id);
+    fetchNotifications();
+  };
+
+  const markAllRead = async () => {
+    await notificationsApi.readAll();
+    fetchNotifications();
   };
 
   return (
-    <nav style={{ display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 24px',margin:'16px 24px 0',background:navBg,border:`1px solid ${border}`,borderRadius:'18px',backdropFilter:'blur(24px)',WebkitBackdropFilter:'blur(24px)',position:'sticky',top:'16px',zIndex:40,boxShadow:dark?'0 4px 24px rgba(0,0,0,0.3)':'0 4px 16px rgba(0,0,0,0.06)',transition:'background 0.3s,border-color 0.3s' }}>
-
-      <div style={{ display:'flex',alignItems:'center',gap:'28px' }}>
-        <Link href="/dashboard" style={{ display:'flex',alignItems:'center',gap:'9px',textDecoration:'none' }}>
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect width="28" height="28" rx="8" fill="#818cf8" opacity="0.15"/>
-            <rect x="5" y="16" width="4" height="8" rx="2" fill="#818cf8"/>
-            <rect x="12" y="10" width="4" height="14" rx="2" fill="#34d399"/>
-            <rect x="19" y="4" width="4" height="20" rx="2" fill="#fb7185"/>
-          </svg>
-          <span style={{ fontSize:'17px',fontWeight:700,background:'linear-gradient(135deg,#818cf8,#34d399)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',letterSpacing:'-0.3px' }}>FinSight</span>
+    <div className="w-full flex items-center justify-between px-8 py-5 relative z-[100]">
+      {/* Brand - Left Column */}
+      <div className="flex-1 flex justify-start min-w-0">
+        <Link href="/dashboard" className="flex-shrink-0">
+          <div className="flex items-center gap-3 cursor-pointer focus:outline-none">
+            <Logo />
+          </div>
         </Link>
+      </div>
 
-        <div style={{ display:'flex',gap:'2px' }}>
-          {TABS.map(label => (
-            <button key={label} onClick={() => onTabChange(label)}
-              style={{ padding:'7px 16px',borderRadius:'9px',fontSize:'13.5px',fontWeight: activeTab===label?600:400,border:'none',cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s',
-                background: activeTab===label ? 'var(--accent-dim)' : 'transparent',
-                color: activeTab===label ? 'var(--accent)' : 'var(--text2)',
-                borderBottom: activeTab===label ? '2px solid var(--accent)' : '2px solid transparent',
-              }}>
-              {label}
+      {/* Pill Nav - Center Column — lower z so expanded search appears on top */}
+      <div className="flex-none relative z-10">
+        <div className="hidden md:flex bg-gray-100/80 dark:bg-[#131823] dark:border border-white/10 rounded-full p-1.5 shadow-xl backdrop-blur-sm">
+          {tabs.map(tab => (
+            <button
+              key={tab}
+              onClick={() => onTabChange(tab)}
+              className={`relative px-6 py-2.5 rounded-full text-sm font-semibold ${
+                activeTab === tab
+                  ? 'bg-white dark:bg-white/10 text-gray-900 dark:text-white shadow-md'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              {tab}
             </button>
           ))}
         </div>
       </div>
 
-      <div style={{ display:'flex',alignItems:'center',gap:'8px' }}>
-        <div style={{ display:'flex',alignItems:'center',gap:'8px',background:'var(--glass)',border:`1px solid ${border}`,borderRadius:'10px',padding:'7px 14px',width:'190px' }}>
-          <Search size={13} color="var(--text3)" strokeWidth={2}/>
-          <input placeholder="Search…" style={{ background:'none',border:'none',outline:'none',fontFamily:'inherit',fontSize:'13px',color:'var(--text)',width:'100%' }}/>
+      {/* Right Actions - Right Column */}
+      <div className="flex-1 flex items-center gap-3 justify-end min-w-0" ref={rightColumnRef}>
+        {/* Search — fixed 44px in flow; expands leftward via absolute overlay */}
+        <div className="relative flex-shrink-0 h-11 w-11" ref={searchRef}>
+          {/* Expanding pill — absolutely positioned growing leftward, z above pill nav */}
+          <motion.div
+            initial={false}
+            animate={{ width: searchOpen ? searchMaxWidth : 44 }}
+            transition={{ type: "spring", stiffness: 320, damping: 30 }}
+            className="absolute right-0 top-0 h-11 bg-gray-100/80 dark:bg-[#131823] dark:border border-white/10 rounded-full flex items-center shadow-inner overflow-hidden z-[60]"
+          >
+            <button
+              onClick={() => setSearchOpen(!searchOpen)}
+              className="w-11 h-11 flex-shrink-0 flex items-center justify-center text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              <Search size={18} />
+            </button>
+            <input
+              placeholder="Search anything..."
+              className="flex-1 min-w-0 h-full !bg-transparent !border-none !outline-none !shadow-none !ring-0 text-sm text-gray-900 dark:text-white pr-4 placeholder:text-gray-400 font-medium"
+              style={{ background: 'none', border: 'none', boxShadow: 'none' }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchOpen(true)}
+            />
+          </motion.div>
+
+          {/* Search results dropdown */}
+          <AnimatePresence>
+            {searchOpen && searchQuery.length > 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute right-0 top-full mt-3 w-[450px] bg-white dark:bg-[#131823] border border-gray-200 dark:border-white/10 rounded-[24px] shadow-2xl overflow-hidden z-[100]"
+              >
+                <div className="p-4 max-h-[500px] overflow-y-auto">
+                  {searching ? (
+                    <div className="py-8 text-center text-sm text-gray-400">Searching...</div>
+                  ) : !searchResults ? (
+                    <div className="py-8 text-center text-sm text-gray-400">Loading results...</div>
+                  ) : (
+                    <div className="flex flex-col gap-6">
+                      {searchResults.transactions?.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-3 px-2">
+                            <Tag size={12} className="text-purple-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Transactions</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            {searchResults.transactions.map((tx: any) => (
+                              <div key={tx.id} className="p-3 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl flex items-center justify-between transition group cursor-pointer border border-transparent hover:border-purple-500/20">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center text-xs font-bold text-purple-600 uppercase border border-purple-500/10">
+                                    {tx.merchant?.[0] || 'T'}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-bold text-gray-900 dark:text-white leading-none mb-1">{tx.merchant || 'Unknown'}</span>
+                                    <span className="text-[10px] text-gray-400 font-medium">{tx.category?.name} • {new Date(tx.date).toLocaleDateString()}</span>
+                                  </div>
+                                </div>
+                                <span className="text-sm font-black text-gray-900 dark:text-white">{fmt(tx.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {searchResults.insights?.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-3 px-2">
+                            <Lightbulb size={12} className="text-amber-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Insights</span>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            {searchResults.insights.map((ins: any) => (
+                              <div key={ins.id} className="p-3 hover:bg-amber-500/5 dark:hover:bg-amber-500/10 rounded-xl flex items-start gap-3 transition cursor-pointer border border-transparent hover:border-amber-500/20 group">
+                                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition">
+                                  <Zap size={16} className="text-amber-500" />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                  <p className="text-xs text-gray-700 dark:text-white leading-relaxed font-medium">{ins.message}</p>
+                                  <span className="text-[10px] text-amber-600/60 font-bold uppercase tracking-tighter">AI Analysis</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {searchResults.predictions?.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-2 mb-3 px-2">
+                            <TrendingUp size={12} className="text-emerald-500" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Forecasts</span>
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            {searchResults.predictions.map((p: any, i: number) => (
+                              <div key={i} className="p-3 hover:bg-emerald-500/5 dark:hover:bg-emerald-500/10 rounded-xl flex items-center justify-between transition cursor-pointer border border-transparent hover:border-emerald-500/20">
+                                <span className="text-sm font-bold text-gray-900 dark:text-white">{p.category}</span>
+                                <div className="flex flex-col items-end">
+                                  <span className="text-xs font-black text-emerald-500">{fmt(p.projectedAmount)}</span>
+                                  <span className="text-[9px] uppercase font-bold text-gray-400">Projected</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Theme toggle */}
-        <button onClick={toggle} title={dark?'Switch to light mode':'Switch to dark mode'}
-          style={{ width:'36px',height:'36px',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--glass)',border:`1px solid ${border}`,cursor:'pointer',color:'var(--text2)',transition:'all 0.15s' }}
-          onMouseEnter={e=>{e.currentTarget.style.background='var(--glass-hover)';e.currentTarget.style.color='var(--accent)';}}
-          onMouseLeave={e=>{e.currentTarget.style.background='var(--glass)';e.currentTarget.style.color='var(--text2)';}}>
-          {dark ? <Sun size={15} strokeWidth={2}/> : <Moon size={15} strokeWidth={2}/>}
+        {/* Theme Toggle */}
+        <button
+          onClick={toggle}
+          className="flex-shrink-0 w-11 h-11 rounded-full bg-gray-100/80 dark:bg-[#131823] border border-transparent dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all shadow-sm dark:shadow-none hover:shadow-md"
+          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        <button style={{ width:'36px',height:'36px',borderRadius:'10px',display:'flex',alignItems:'center',justifyContent:'center',background:'var(--glass)',border:`1px solid ${border}`,cursor:'pointer',color:'var(--text2)',transition:'all 0.15s' }}
-          onMouseEnter={e=>{e.currentTarget.style.background='var(--glass-hover)';}}
-          onMouseLeave={e=>{e.currentTarget.style.background='var(--glass)';}}>
-          <Bell size={15} strokeWidth={2}/>
-        </button>
-
-        <div ref={menuRef} style={{ position:'relative' }}>
-          <button onClick={() => setShowMenu(!showMenu)}
-            style={{ display:'flex',alignItems:'center',gap:'8px',background:'var(--glass)',border:`1px solid ${border}`,borderRadius:'10px',padding:'6px 10px 6px 6px',cursor:'pointer',transition:'background 0.15s' }}
-            onMouseEnter={e=>(e.currentTarget.style.background='var(--glass-hover)')}
-            onMouseLeave={e=>(e.currentTarget.style.background='var(--glass)')}>
-            <div style={{ width:'28px',height:'28px',borderRadius:'8px',background:'linear-gradient(135deg,#818cf8,#34d399)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontWeight:700,color:'#fff' }}>{initials}</div>
-            <span style={{ fontSize:'13px',fontWeight:500,color:'var(--text)' }}>{user?.name?.split(' ')[0]}</span>
-            <ChevronDown size={12} color="var(--text3)" style={{ transform:showMenu?'rotate(180deg)':'none',transition:'transform 0.2s' }}/>
+        {/* Notifications */}
+        <div className="relative flex-shrink-0" ref={notifRef}>
+          <button
+            onClick={() => setNotificationsOpen(!notificationsOpen)}
+            className="w-11 h-11 rounded-full bg-gray-100/80 dark:bg-[#131823] border border-transparent dark:border-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all shadow-sm dark:shadow-none hover:shadow-md relative"
+          >
+            <Bell size={18} />
+            {unreadCount > 0 && (
+              <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-red-500 border border-white dark:border-background"></div>
+            )}
           </button>
 
-          {showMenu && (
-            <div style={{ position:'absolute',right:0,top:'calc(100% + 8px)',background:menuBg,border:`1px solid ${border}`,borderRadius:'16px',padding:'6px',zIndex:50,minWidth:'210px',boxShadow:dark?'0 12px 40px rgba(0,0,0,0.6)':'0 8px 32px rgba(0,0,0,0.12)',backdropFilter:'blur(20px)' }}>
-              <div style={{ padding:'10px 12px',borderBottom:`1px solid ${divider}`,marginBottom:'4px' }}>
-                <p style={{ fontSize:'13px',fontWeight:600,color:'var(--text)',margin:0 }}>{user?.name}</p>
-                <p style={{ fontSize:'12px',color:'var(--text2)',margin:'2px 0 0' }}>{user?.email}</p>
-              </div>
+          <AnimatePresence>
+            {notificationsOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute right-0 mt-3 w-80 bg-white dark:bg-[#131823] border border-gray-200 dark:border-white/10 rounded-[24px] shadow-2xl overflow-hidden z-[100]"
+              >
+                <div className="p-4 border-b border-gray-100 dark:border-white/10 flex items-center justify-between">
+                  <h3 className="font-bold text-sm text-gray-900 dark:text-white">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <button onClick={markAllRead} className="text-[10px] font-bold text-purple-500 hover:text-purple-600">Mark all read</button>
+                  )}
+                </div>
+                <div className="max-h-[350px] overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="py-12 text-center text-xs text-gray-400">No notifications yet</div>
+                  ) : (
+                    notifications.map((n: any) => (
+                      <div key={n.id} className={`p-4 border-b border-gray-50 dark:border-white/5 flex gap-3 group transition hover:bg-gray-50 dark:hover:bg-white/[0.03] ${!n.isRead ? 'bg-purple-500/[0.03]' : ''}`}>
+                        <div className="flex-1">
+                          <p className={`text-xs leading-relaxed ${!n.isRead ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>{n.message}</p>
+                          <span className="text-[10px] text-gray-400 block mt-1">{new Date(n.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition">
+                          <button onClick={() => markRead(n.id)} className="p-1 hover:bg-green-500/10 text-gray-400 hover:text-green-500 rounded"><Check size={12} /></button>
+                          <button onClick={() => archiveNotify(n.id)} className="p-1 hover:bg-red-500/10 text-gray-400 hover:text-red-500 rounded"><X size={12} /></button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-              {/* Theme row inside menu */}
-              <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',padding:'9px 12px',marginBottom:'2px' }}>
-                <span style={{ fontSize:'13.5px',color:'var(--text)',display:'flex',alignItems:'center',gap:'10px' }}>
-                  {dark ? <Sun size={15} strokeWidth={2} color="var(--text2)"/> : <Moon size={15} strokeWidth={2} color="var(--text2)"/>}
-                  {dark ? 'Light mode' : 'Dark mode'}
-                </span>
-                <button onClick={toggle}
-                  style={{ width:'38px',height:'22px',borderRadius:'11px',border:'none',cursor:'pointer',position:'relative',transition:'background 0.2s',background:dark?'rgba(255,255,255,0.12)':'var(--accent)' }}>
-                  <div style={{ width:'16px',height:'16px',borderRadius:'50%',background:'#fff',position:'absolute',top:'3px',left:dark?'3px':'calc(100% - 19px)',transition:'left 0.2s',boxShadow:'0 1px 4px rgba(0,0,0,0.3)' }}/>
-                </button>
-              </div>
-
-              <div style={{ borderBottom:`1px solid ${divider}`,marginBottom:'4px' }}/>
-
-              {[
-                { icon:User,     label:'Profile',  fn:()=>{router.push('/settings?tab=profile');setShowMenu(false);} },
-                { icon:Settings, label:'Settings', fn:()=>{router.push('/settings');setShowMenu(false);} },
-              ].map(({ icon:Icon, label, fn }) => (
-                <button key={label} onClick={fn}
-                  style={{ width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'9px 12px',fontSize:'13.5px',color:'var(--text)',background:'none',border:'none',cursor:'pointer',borderRadius:'10px',fontFamily:'inherit',textAlign:'left',transition:'background 0.15s' }}
-                  onMouseEnter={e=>itemHover(e,true)} onMouseLeave={e=>itemHover(e,false)}>
-                  <Icon size={15} strokeWidth={2} color="var(--text2)"/> {label}
-                </button>
-              ))}
-              <div style={{ borderTop:`1px solid ${divider}`,marginTop:'4px',paddingTop:'4px' }}>
-                <button onClick={()=>{logout();setShowMenu(false);}}
-                  style={{ width:'100%',display:'flex',alignItems:'center',gap:'10px',padding:'9px 12px',fontSize:'13.5px',color:'var(--accent3)',background:'none',border:'none',cursor:'pointer',borderRadius:'10px',fontFamily:'inherit',textAlign:'left',transition:'background 0.15s' }}
-                  onMouseEnter={e=>dangerHover(e,true)} onMouseLeave={e=>dangerHover(e,false)}>
-                  <LogOut size={15} strokeWidth={2}/> Sign out
-                </button>
-              </div>
+        {/* User Dropdown */}
+        <div className="relative flex-shrink-0" ref={userDispRef}>
+          <div
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="w-11 h-11 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-0.5 cursor-pointer ml-2 shadow-[0_0_15px_rgba(192,132,252,0.3)] hover:shadow-[0_0_20px_rgba(192,132,252,0.5)] transition-shadow"
+          >
+            <div className="w-full h-full rounded-full bg-white dark:bg-[#131823] flex items-center justify-center overflow-hidden">
+              <span className="text-gray-900 dark:text-white font-bold text-sm">{user?.name ? user.name[0].toUpperCase() : 'A'}</span>
             </div>
-          )}
+          </div>
+
+          <AnimatePresence>
+            {dropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute right-0 top-14 w-60 bg-white dark:bg-[#131823] border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden py-2"
+              >
+                <div className="px-5 py-3 border-b border-gray-100 dark:border-white/5">
+                  <p className="font-semibold text-gray-900 dark:text-white truncate">{user?.name || 'User'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email || 'email@example.com'}</p>
+                </div>
+                <div className="py-2">
+                  <Link href="/settings" onClick={() => setDropdownOpen(false)}>
+                    <div className="flex items-center gap-3 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition">
+                      <UserIcon size={16} /> Profile Settings
+                    </div>
+                  </Link>
+                  <div
+                    onClick={() => { toggle(); setDropdownOpen(false); }}
+                    className="flex items-center gap-3 px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition"
+                  >
+                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                    Switch to {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                  </div>
+                </div>
+                <div className="py-2 border-t border-gray-100 dark:border-white/5">
+                  <div
+                    onClick={() => { logout(); setDropdownOpen(false); }}
+                    className="flex items-center gap-3 px-5 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 cursor-pointer transition"
+                  >
+                    <LogOut size={16} /> Logout
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
-    </nav>
+    </div>
   );
 }

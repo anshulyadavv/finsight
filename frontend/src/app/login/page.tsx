@@ -2,82 +2,160 @@
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
-import Footer from '@/components/layout/Footer';
+import dynamic from 'next/dynamic';
+const WatcherRobot = dynamic(() => import('@/components/auth/WatcherRobot'), { ssr: false });
+import Logo from '@/components/ui/Logo';
+import { ArrowRight, Github, Mail } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email,p,e,l] = [useState(''),useState(''),useState(''),useState(false)];
-  const [email_v, setEmail]    = email;
-  const [pass_v,  setPass]     = p;
-  const [error_v, setError]    = e;
-  const [load_v,  setLoad]     = l;
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   const onSubmit = async (ev: FormEvent) => {
-    ev.preventDefault(); setLoad(true); setError('');
-    try { await login(email_v, pass_v); router.push('/dashboard'); }
-    catch (err:any) { setError(err.response?.data?.message||'Invalid email or password'); }
-    finally { setLoad(false); }
+    ev.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      await login(email, password);
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Invalid email or password');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const inp: React.CSSProperties = { width:'100%',padding:'11px 14px',borderRadius:'10px',border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.06)',fontSize:'14px',color:'var(--text)',fontFamily:'inherit',outline:'none',transition:'border-color 0.15s,background 0.15s' };
-
   return (
-    <div style={{ minHeight:'100vh',background:'var(--bg)',display:'flex',flexDirection:'column' }}>
-      <div style={{ flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:'24px' }}>
-        <motion.div initial={{ opacity:0,y:20 }} animate={{ opacity:1,y:0 }} transition={{ duration:0.35 }} style={{ width:'100%',maxWidth:'400px' }}>
-          <div style={{ textAlign:'center',marginBottom:'32px' }}>
-            <div style={{ display:'inline-flex',alignItems:'center',gap:'10px',marginBottom:'8px' }}>
-              <svg width="34" height="34" viewBox="0 0 28 28" fill="none">
-                <rect width="28" height="28" rx="8" fill="#2dd4bf" opacity="0.15"/>
-                <rect x="5" y="16" width="4" height="8" rx="2" fill="#2dd4bf"/>
-                <rect x="12" y="10" width="4" height="14" rx="2" fill="#5eead4"/>
-                <rect x="19" y="4" width="4" height="20" rx="2" fill="#4ade80"/>
-              </svg>
-              <span style={{ fontSize:'22px',fontWeight:700,color:'#2dd4bf' }}>FinSight</span>
-            </div>
-            <p style={{ color:'var(--text3)',fontSize:'13.5px' }}>Personal Finance Intelligence</p>
+    <div className="min-h-screen flex selection:bg-violet-200 selection:text-violet-900 font-sans bg-white overflow-y-auto">
+      
+      {/* Noise Overlay */}
+      <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E')" }} />
+
+      {/* Left side: Form */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-6 lg:p-12 relative z-10 bg-white shadow-[20px_0_60px_rgba(0,0,0,0.02)]">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-sm"
+        >
+          <div className="mb-6">
+            <Link href="/" className="inline-block mb-6 group focus:outline-none">
+              <Logo variant="light" />
+            </Link>
+            <h1 className="text-[32px] font-black tracking-tighter leading-none text-gray-900 mb-2">Welcome back</h1>
+            <p className="text-[14px] text-gray-600 font-medium tracking-tight">Enter your details for your intelligence dashboard.</p>
           </div>
 
-          <div style={{ background:'var(--glass)',border:'1px solid var(--glass-border)',borderRadius:'24px',padding:'32px',backdropFilter:'blur(20px)',WebkitBackdropFilter:'blur(20px)',boxShadow:'var(--shadow)' }}>
-            <h1 style={{ fontSize:'21px',fontWeight:700,color:'var(--text)',marginBottom:'5px' }}>Welcome back</h1>
-            <p style={{ color:'var(--text3)',fontSize:'13.5px',marginBottom:'24px' }}>Sign in to your account</p>
-
-            {error_v && (
-              <div style={{ background:'var(--accent3-dim)',color:'var(--accent3)',borderRadius:'10px',padding:'10px 14px',fontSize:'13px',marginBottom:'16px',border:'1px solid var(--accent3-dim)' }}>
-                {error_v}
-              </div>
+          <AnimatePresence>
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-rose-50 text-rose-600 rounded-[12px] px-4 py-3 text-[13px] font-bold border border-rose-100 mb-5 flex items-center gap-2.5"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                {error}
+              </motion.div>
             )}
+          </AnimatePresence>
 
-            <form onSubmit={onSubmit} style={{ display:'flex',flexDirection:'column',gap:'14px' }}>
-              <div>
-                <label style={{ fontSize:'13px',fontWeight:500,color:'rgba(255,255,255,0.5)',display:'block',marginBottom:'6px' }}>Email</label>
-                <input type="email" value={email_v} onChange={e=>setEmail(e.target.value)} required placeholder="you@example.com" style={inp}
-                  onFocus={e=>{e.currentTarget.style.borderColor='rgba(45,212,191,0.5)';e.currentTarget.style.background='rgba(255,255,255,0.08)';}}
-                  onBlur={e=>{e.currentTarget.style.borderColor='rgba(255,255,255,0.1)';e.currentTarget.style.background='rgba(255,255,255,0.06)';}}/>
-              </div>
-              <div>
-                <label style={{ fontSize:'13px',fontWeight:500,color:'rgba(255,255,255,0.5)',display:'block',marginBottom:'6px' }}>Password</label>
-                <input type="password" value={pass_v} onChange={e=>setPass(e.target.value)} required placeholder="••••••••" style={inp}
-                  onFocus={e=>{e.currentTarget.style.borderColor='rgba(45,212,191,0.5)';e.currentTarget.style.background='rgba(255,255,255,0.08)';}}
-                  onBlur={e=>{e.currentTarget.style.borderColor='rgba(255,255,255,0.1)';e.currentTarget.style.background='rgba(255,255,255,0.06)';}}/>
-              </div>
-              <motion.button type="submit" disabled={load_v} whileHover={{ scale:1.01 }} whileTap={{ scale:0.98 }}
-                style={{ background:'#2dd4bf',color:'#0d1117',border:'none',borderRadius:'50px',padding:'13px',fontSize:'14.5px',fontWeight:700,cursor:load_v?'not-allowed':'pointer',opacity:load_v?0.7:1,marginTop:'4px',fontFamily:'inherit',boxShadow:'0 4px 20px rgba(45,212,191,0.3)' }}>
-                {load_v?'Signing in…':'Sign in'}
-              </motion.button>
-            </form>
+          <form onSubmit={onSubmit} className="flex flex-col gap-4">
+            <div className="relative group">
+              <input 
+                type="email" value={email} onChange={e => setEmail(e.target.value)} required 
+                placeholder="Email address" 
+                className="w-full px-5 py-4 rounded-[16px] border border-gray-100 bg-[#FBFBFC] focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 shadow-sm text-[14px] font-bold outline-none transition-all placeholder:text-gray-500 placeholder:font-medium text-gray-900"
+              />
+            </div>
+            <div className="relative group">
+              <input 
+                type="password" value={password} onChange={e => setPassword(e.target.value)} required 
+                placeholder="Password" 
+                className="w-full px-5 py-4 rounded-[16px] border border-gray-100 bg-[#FBFBFC] focus:bg-white focus:border-gray-900 focus:ring-4 focus:ring-gray-900/5 shadow-sm text-[14px] font-bold outline-none transition-all placeholder:text-gray-500 placeholder:font-medium text-gray-900"
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
+              />
+            </div>
+            
+            <div className="flex justify-end -mt-1">
+              <a href="#" className="text-[12px] font-bold text-gray-500 hover:text-gray-900 transition-colors">Forgot Password?</a>
+            </div>
 
-            <p style={{ textAlign:'center',fontSize:'13px',color:'var(--text3)',marginTop:'20px' }}>
-              Don&apos;t have an account?{' '}
-              <Link href="/register" style={{ color:'#2dd4bf',fontWeight:600,textDecoration:'none' }}>Create one</Link>
-            </p>
+            <button 
+              type="submit" disabled={loading}
+              className="w-full bg-gray-900 text-white rounded-full py-4 text-[15px] font-bold shadow-[0_12px_24px_-8px_rgba(0,0,0,0.3)] hover:shadow-[0_16px_32px_-8px_rgba(0,0,0,0.4)] hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-70 flex items-center justify-center gap-2"
+            >
+              {loading ? 'Authenticating...' : 'Sign in'}
+              {!loading && <ArrowRight size={16} className="text-gray-500" />}
+            </button>
+          </form>
+
+          <div className="mt-8 flex items-center justify-center text-[11px] font-black text-gray-500 uppercase tracking-[0.2em] gap-3">
+            <div className="h-px bg-gray-100 flex-1"></div>
+            <span>Continue with</span>
+            <div className="h-px bg-gray-100 flex-1"></div>
           </div>
+
+          <div className="flex justify-center gap-3 mt-5">
+            <button className="flex-1 h-12 rounded-full border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-900 transition-all flex items-center justify-center gap-2.5 text-[13px] font-bold text-gray-900 shadow-sm">
+              <Mail size={16} className="text-gray-700" /> Google
+            </button>
+            <button className="flex-1 h-12 rounded-full border border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-900 transition-all flex items-center justify-center gap-2.5 text-[13px] font-bold text-gray-900 shadow-sm">
+              <Github size={16} className="text-gray-700" /> GitHub
+            </button>
+          </div>
+
+          <p className="mt-8 text-center text-[14px] font-medium text-gray-600">
+            New here? <Link href="/register" className="text-gray-900 font-black hover:underline underline-offset-4">Create account</Link>
+          </p>
         </motion.div>
       </div>
-      <Footer/>
+
+      {/* Right side: Robot character + Restored Intelligent Underwater Background */}
+      <div className="hidden md:flex w-1/2 p-10 bg-white relative overflow-hidden">
+        <div className="w-full h-full rounded-[40px] relative flex flex-col items-center justify-center gap-8 shadow-inner overflow-hidden border border-black/5" style={{ backgroundImage: "url('/images/underwater.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+          
+          {/* Ambient Overlay for depth and contrast */}
+          <div className="absolute inset-0 bg-blue-900/30 mix-blend-multiply" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 z-0" />
+
+
+
+          {/* 3D Watcher Robot character */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.4, duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            className="z-10 relative mt-[-20px]"
+          >
+            <WatcherRobot isPasswordFocused={passwordFocused} />
+          </motion.div>
+
+          {/* Bottom text */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ delay: 0.8, duration: 1 }}
+            className="text-center z-10 px-10 relative bg-white/10 backdrop-blur-md pb-6 pt-5 rounded-3xl border border-white/20 shadow-xl"
+          >
+            <h3 className="text-[24px] font-black text-white tracking-tighter leading-none mb-3 drop-shadow-md">
+              Welcome to <br />FinSight Intelligence.
+            </h3>
+            <p className="text-[14px] font-semibold text-white/90 tracking-tight leading-relaxed">Your financial data, protected by the most advanced automated security protocols.</p>
+          </motion.div>
+
+        </div>
+      </div>
+
     </div>
   );
 }

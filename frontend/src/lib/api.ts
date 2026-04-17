@@ -46,7 +46,7 @@ api.interceptors.response.use(
   },
 );
 
-// ── Auth ────────────────────────────────────────────────────────────────────
+
 export const authApi = {
   register: (data: { name: string; email: string; password: string }) =>
     api.post('/auth/register', data),
@@ -74,9 +74,11 @@ export const txApi = {
 
 // ── Insights ──────────────────────────────────────────────────────────────────
 export const insightsApi = {
-  list:    ()          => api.get('/insights'),
-  dismiss: (id: string) => api.patch(`/insights/${id}/dismiss`),
+  list:        ()           => api.get('/insights'),
+  dismiss:     (id: string)  => api.patch(`/insights/${id}/dismiss`),
+  purgeStale:  ()           => api.delete('/insights/purge-stale'),
 };
+
 
 // ── Anomalies ──────────────────────────────────────────────────────────────────
 export const anomaliesApi = {
@@ -101,3 +103,18 @@ export const budgetsApi = {
 export const categoriesApi = {
   list: () => api.get('/categories'),
 };
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+export const notificationsApi = {
+  list:      ()          => api.get('/notifications'),
+  read:      (id: string) => api.patch(`/notifications/${id}/read`),
+  readAll:   ()          => api.patch('/notifications/read-all'),
+  archive:   (id: string) => api.patch(`/notifications/${id}/archive`),
+  subscribe: (sub: any)  => api.post('/notifications/push/subscribe', sub),
+};
+
+// ── Search ────────────────────────────────────────────────────────────────────
+export const searchApi = {
+  global: (q: string) => api.get('/search', { params: { q } }),
+};
+

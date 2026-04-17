@@ -4,8 +4,10 @@
 @tailwind utilities;
 
 /* ── Dark mode (default) ─────────────────────────────────────────────────── */
+/* useTheme sets BOTH data-theme attribute AND .dark class on <html>          */
 :root,
-[data-theme="dark"] {
+[data-theme="dark"],
+.dark {
   --bg:            #0d1117;
   --bg2:           #161b22;
   --bg3:           #1c2128;
@@ -38,7 +40,8 @@
 }
 
 /* ── Light mode ──────────────────────────────────────────────────────────── */
-[data-theme="light"] {
+[data-theme="light"],
+html:not(.dark) {
   --bg:            #f3f4f6;
   --bg2:           #e5e7eb;
   --bg3:           #d1d5db;
@@ -67,7 +70,12 @@
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+}
 
 html { transition: background 0.3s; }
 
@@ -89,13 +97,15 @@ body::before {
   z-index: 0;
   transition: opacity 0.3s;
 }
-[data-theme="dark"] body::before {
+[data-theme="dark"] body::before,
+.dark body::before {
   background:
     radial-gradient(ellipse 70% 40% at 15% 0%, rgba(129,140,248,0.06) 0%, transparent 60%),
     radial-gradient(ellipse 50% 35% at 85% 95%, rgba(52,211,153,0.05) 0%, transparent 55%),
     radial-gradient(ellipse 40% 30% at 55% 45%, rgba(251,113,133,0.03) 0%, transparent 50%);
 }
-[data-theme="light"] body::before {
+[data-theme="light"] body::before,
+html:not(.dark) body::before {
   background:
     radial-gradient(ellipse 70% 40% at 15% 0%, rgba(99,102,241,0.06) 0%, transparent 60%),
     radial-gradient(ellipse 50% 35% at 85% 95%, rgba(5,150,105,0.04) 0%, transparent 55%);
@@ -110,7 +120,7 @@ body > * { position: relative; z-index: 1; }
   border-radius: 18px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  transition: background 0.2s, box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+  transition: background 0.3s, box-shadow 0.2s, transform 0.2s, border-color 0.3s;
 }
 .glass:hover {
   background: var(--glass-hover);
@@ -123,6 +133,7 @@ body > * { position: relative; z-index: 1; }
   border-radius: 18px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  transition: background 0.3s, border-color 0.3s;
 }
 
 /* ── Surface (non-blurred panel) ─────────────────────────────────────────── */
@@ -130,7 +141,7 @@ body > * { position: relative; z-index: 1; }
   background: var(--surface);
   border: 1px solid var(--glass-border);
   border-radius: 18px;
-  transition: background 0.2s;
+  transition: background 0.3s, border-color 0.3s;
 }
 
 /* ── Skeleton ────────────────────────────────────────────────────────────── */
@@ -138,13 +149,15 @@ body > * { position: relative; z-index: 1; }
   0%   { background-position: -200% center; }
   100% { background-position:  200% center; }
 }
-[data-theme="dark"] .skeleton {
+[data-theme="dark"] .skeleton,
+.dark .skeleton {
   background: linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite;
   border-radius: 8px;
 }
-[data-theme="light"] .skeleton {
+[data-theme="light"] .skeleton,
+html:not(.dark) .skeleton {
   background: linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite;
@@ -163,7 +176,7 @@ input, select, textarea {
   border: 1px solid var(--glass-border);
   color: var(--text);
   border-radius: 10px;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.3s, background 0.3s, color 0.3s;
 }
 input::placeholder, textarea::placeholder { color: var(--text3); }
 input:focus, select:focus, textarea:focus {
@@ -171,8 +184,10 @@ input:focus, select:focus, textarea:focus {
   border-color: var(--accent);
   background: var(--glass-hover);
 }
-[data-theme="dark"] select option { background: #1c2128; color: var(--text); }
-[data-theme="light"] select option { background: #fff; color: var(--text); }
+[data-theme="dark"] select option,
+.dark select option { background: #1c2128; color: var(--text); }
+[data-theme="light"] select option,
+html:not(.dark) select option { background: #fff; color: var(--text); }
 
 /* ── Accent button ───────────────────────────────────────────────────────── */
 .btn-accent {
@@ -196,6 +211,6 @@ input:focus, select:focus, textarea:focus {
   border-radius: 50px;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.3s, color 0.3s, border-color 0.3s;
 }
 .btn-ghost:hover { background: var(--glass-hover); color: var(--text); }

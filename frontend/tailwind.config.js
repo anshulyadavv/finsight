@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: ['./src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
@@ -8,24 +9,32 @@ module.exports = {
         mono: ['DM Mono', 'monospace'],
       },
       colors: {
-        teal: {
-          DEFAULT: '#0f766e',
-          light:   '#ccfbf1',
-          mid:     '#14b8a6',
+        ethereal: {
+          dark:      '#0d1117',
+          card:      '#161b22',
+          green:     '#b4f68c',
+          purple:    '#c084fc',
+          red:       '#f43f5e',
+          text:      '#e6edf3',
+          textMuted: '#8b949e',
         },
-        bg: {
-          DEFAULT: '#f0f4f8',
-          2:       '#e8edf3',
+        orbix: {
+          purple:    '#8B5CF6',
+          bg:        '#f3f4f6',
+          card:      '#ffffff',
+          text:      '#0f172a',
+          textMuted: '#374151',
         },
+        // CSS variable wrappers for components that use var() via Tailwind
+        background: 'var(--bg)',
+        surface:    'var(--surface)',
       },
       boxShadow: {
-        card:       '6px 6px 16px rgba(0,0,0,0.06), -4px -4px 12px rgba(255,255,255,0.85)',
-        'card-hover':'8px 8px 20px rgba(0,0,0,0.10), -6px -6px 16px rgba(255,255,255,0.9)',
-        inset:      'inset 2px 2px 6px rgba(0,0,0,0.05), inset -2px -2px 6px rgba(255,255,255,0.8)',
+        card:  '0 8px 30px rgba(0,0,0,0.05)',
+        glass: '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
       },
       borderRadius: {
-        xl2: '20px',
-        xl3: '24px',
+        xl4: '32px',
       },
     },
   },

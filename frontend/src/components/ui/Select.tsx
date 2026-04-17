@@ -74,6 +74,7 @@ export function Select({ value, onChange, options, placeholder, label }: SelectP
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, scale: 0.97 }}
             transition={{ duration: 0.13 }}
+            data-lenis-prevent
             style={{
               position: 'absolute',
               [above ? 'bottom' : 'top']: 'calc(100% + 6px)',
@@ -85,7 +86,6 @@ export function Select({ value, onChange, options, placeholder, label }: SelectP
               WebkitBackdropFilter: 'blur(24px)',
               boxShadow: 'var(--shadow)',
               zIndex: 400,
-              overflow: 'hidden',
               maxHeight: '240px',
               overflowY: 'auto',
               padding: '4px',

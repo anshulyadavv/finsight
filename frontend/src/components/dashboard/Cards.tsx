@@ -9,6 +9,7 @@ import {
   TrendingUp, TrendingDown, AlertTriangle, CreditCard,
   Building2, Shield, X, CheckCircle, Plus, Trash2, ChevronLeft, ChevronRight,
 } from 'lucide-react';
+import { Select } from '@/components/ui/Select';
 
 const fmt = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
 const DONUT_COLORS = ['#2dd4bf','#4ade80','#60a5fa','#fbbf24','#f87171','#a78bfa','#94a3b8','#34d399'];
@@ -409,16 +410,18 @@ export function FinancesCard({ user }: any) {
                   onFocus={e => (e.currentTarget.style.borderColor='var(--accent)')}
                   onBlur={e  => (e.currentTarget.style.borderColor='var(--glass-border)')}/>
               </div>
-              <div>
-                <label style={lbl}>Network</label>
-                <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as 'visa' }))}
-                  style={inp}
-                  onFocus={e => (e.currentTarget.style.borderColor='var(--accent)')}
-                  onBlur={e  => (e.currentTarget.style.borderColor='var(--glass-border)')}>
-                  {['visa','mastercard','rupay','amex'].map(t => (
-                    <option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>
-                  ))}
-                </select>
+              <div style={{ paddingTop: '5px' }}>
+                <Select
+                  label="Network"
+                  value={form.type}
+                  onChange={(v) => setForm(f => ({ ...f, type: v as 'visa' }))}
+                  options={[
+                    { value: 'visa', label: 'Visa' },
+                    { value: 'mastercard', label: 'Mastercard' },
+                    { value: 'rupay', label: 'Rupay' },
+                    { value: 'amex', label: 'Amex' },
+                  ]}
+                />
               </div>
             </div>
             <div>

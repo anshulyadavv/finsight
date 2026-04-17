@@ -5,8 +5,20 @@ import { User, Lock, Bell, CreditCard, Shield, Check, AlertCircle } from 'lucide
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
 import AppShell from '@/components/layout/AppShell';
+import { Select } from '@/components/ui/Select';
 
 type Tab = 'profile'|'security'|'notifications'|'billing';
+
+const CURRENCY_OPTIONS = [
+  { value: 'INR', label: 'INR — Indian Rupee' },
+  { value: 'USD', label: 'USD — US Dollar' },
+  { value: 'EUR', label: 'EUR — Euro' },
+  { value: 'GBP', label: 'GBP — British Pound' },
+  { value: 'JPY', label: 'JPY — Japanese Yen' },
+  { value: 'AUD', label: 'AUD — Australian Dollar' },
+  { value: 'CAD', label: 'CAD — Canadian Dollar' },
+  { value: 'SGD', label: 'SGD — Singapore Dollar' },
+];
 
 function Toast({ msg, type }: { msg:string; type:'success'|'error' }) {
   return (
@@ -75,11 +87,12 @@ export default function SettingsPage() {
 
   return (
     <AppShell>
-      <div style={{ padding:'20px 24px 0' }}>
+      {/* min-h fills remaining viewport so footer always stays at bottom */}
+      <div style={{ padding:'20px 24px 40px', minHeight:'calc(100vh - 80px)' }}>
         <h1 style={{ fontSize:'26px',fontWeight:700,letterSpacing:'-0.5px',color:'var(--text)',margin:'0 0 4px' }}>Settings</h1>
         <p style={{ fontSize:'13px',color:'var(--text2)',marginBottom:'24px' }}>Manage your account preferences</p>
 
-        <div style={{ display:'grid',gridTemplateColumns:'220px 1fr',gap:'16px',alignItems:'start',marginBottom:'24px' }}>
+        <div style={{ display:'grid',gridTemplateColumns:'220px 1fr',gap:'16px',alignItems:'start' }}>
           {/* Sidebar */}
           <div className="glass-static" style={{ padding:'8px' }}>
             {ITEMS.map(({key,icon:Icon,label,desc})=>(
@@ -116,11 +129,14 @@ export default function SettingsPage() {
                     <div><label style={lbl}>Full name</label><input value={name} onChange={e=>setName(e.target.value)} style={inp} onFocus={fi} onBlur={bl} placeholder="Your name"/></div>
                     <div><label style={lbl}>Email address</label><input value={user?.email||''} disabled style={{ ...inp,opacity:0.5,cursor:'not-allowed' }}/></div>
                   </div>
-                  <div style={{ maxWidth:'180px' }}>
-                    <label style={lbl}>Currency</label>
-                    <select value={curr} onChange={e=>setCurr(e.target.value)} style={inp} onFocus={fi} onBlur={bl}>
-                      {['INR','USD','EUR','GBP','JPY','AUD','CAD','SGD'].map(c=><option key={c} value={c}>{c}</option>)}
-                    </select>
+                  {/* Currency — uses our custom Select component for consistent styling */}
+                  <div style={{ maxWidth:'220px', position:'relative', zIndex:10 }}>
+                    <Select
+                      label="Currency"
+                      value={curr}
+                      onChange={setCurr}
+                      options={CURRENCY_OPTIONS}
+                    />
                   </div>
                   <div><button type="submit" disabled={saving} style={{ padding:'10px 24px',borderRadius:'50px',background:'var(--accent)',color:'#fff',border:'none',fontSize:'14px',fontWeight:600,cursor:'pointer',fontFamily:'inherit',opacity:saving?0.7:1,transition:'filter 0.15s' }} onMouseEnter={e=>(e.currentTarget.style.filter='brightness(1.1)')} onMouseLeave={e=>(e.currentTarget.style.filter='none')}>{saving?'Saving…':'Save changes'}</button></div>
                 </form>
@@ -155,7 +171,7 @@ export default function SettingsPage() {
                   <div key={label} style={{ display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 0',borderBottom:'1px solid var(--glass-border)' }}>
                     <div><p style={{ fontSize:'14px',fontWeight:500,margin:0,color:'var(--text)' }}>{label}</p><p style={{ fontSize:'12px',color:'var(--text3)',margin:'3px 0 0' }}>{desc}</p></div>
                     <button onClick={()=>set(!value)} style={{ width:'42px',height:'23px',borderRadius:'11px',border:'none',cursor:'pointer',background:value?'var(--accent)':'var(--glass-strong)',position:'relative',transition:'background 0.2s',flexShrink:0 }}>
-                      <div style={{ width:'17px',height:'17px',borderRadius:'50%',background:'#fff',position:'absolute',top:'3px',left:value?'calc(100% - 20px)':'3px',transition:'left 0.2s',boxShadow:'0 1px 4px rgba(0,0,0,0.3)' }}/>
+                      <div style={{ width:'17px',height:'17px',borderRadius:'50%',background:'#fff',position:'absolute',top:'3px',left:value?'calc(100% - 20px)':'3px',transition:'left 0.2s',boxShadow:'0 1px 4px rgba(0,0,0,0.3)'}}/>
                     </button>
                   </div>
                 ))}

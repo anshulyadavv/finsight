@@ -1,109 +1,65 @@
 'use client';
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Download, Plus } from 'lucide-react';
-import { MonthPicker } from '@/components/ui/DatePicker';
+import { Plus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboard } from '@/hooks/useDashboard';
-import { anomaliesApi, insightsApi, txApi } from '@/lib/api';
 import AppShell from '@/components/layout/AppShell';
 import {
-  IncomeCard, StrategyCard, OverviewCard, MoneyFlowCard,
-  FinancesCard, WealthCard, InsightsCard, AnomalyCard, PredictionCard,
-} from '@/components/dashboard/Cards';
+  TotalBalanceCard, IncomeExpenseCard, RevenueFlowCard, ExpenseSplitCard,
+  MyCardsList, SubscriptionsList
+} from '@/components/dashboard/EtherealCards';
 import AddExpenseModal from '@/components/dashboard/AddExpenseModal';
-
-function getGreeting() {
-  const h = new Date().getHours();
-  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-}
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
-  const [month,     setMonth]     = useState<string | undefined>();
-
-  const { summary, overview, moneyFlow, wealth, insights, anomalies, prediction, loading, refetch } = useDashboard(month);
-
-  const handleExport = async () => {
-    try {
-      const params: any = { limit: 1000, sortBy: 'date', sortOrder: 'DESC' };
-      if (month) params.month = month;
-      const { data } = await txApi.list(params);
-      const txs: any[] = data.data.items || [];
-      if (!txs.length) { alert('No transactions to export for this period.'); return; }
-
-      const headers = ['Date','Description','Merchant','Type','Category','Amount','Payment Method'];
-      const rows = txs.map(t => [
-        new Date(t.date).toLocaleDateString('en-IN'),
-        t.description || '',
-        t.merchant || '',
-        t.type,
-        t.category?.name || '',
-        t.amount,
-        t.paymentMethod || '',
-      ]);
-      const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type:'text/csv' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = `finsight-transactions-${month || 'all'}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch { alert('Export failed. Please try again.'); }
-  };
-
-  const now   = new Date();
-  const dateStr = now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  const { summary, overview, moneyFlow, wealth, loading, refetch } = useDashboard();
 
   return (
     <AppShell>
-      <div style={{ padding:'20px 24px 0' }}>
-        {/* Header */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'20px' }}>
-          <div>
-            <h1 style={{ fontSize:'26px', fontWeight:700, letterSpacing:'-0.5px', color:'var(--text)', margin:0 }}>
-              {getGreeting()}, {user?.name?.split(' ')[0]}
-            </h1>
-            <p style={{ fontSize:'13px', color:'var(--text2)', marginTop:'3px' }}>{dateStr}</p>
+      <div className="w-full max-w-[1600px] mx-auto p-6 md:p-8 flex flex-col xl:flex-row items-start gap-6 text-gray-900 dark:text-ethereal-text">
+        
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col gap-6">
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">My Dashboard</h1>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setShowModal(true)}
+                className="bg-white dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/10 transition px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 shadow-sm dark:shadow-none"
+              >
+                <Plus size={16} /> Record Transaction
+              </button>
+            </div>
           </div>
-          <div style={{ display:'flex', gap:'10px', alignItems:'center' }}>
-            <MonthPicker value={month} onChange={setMonth}/>
-            <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }} onClick={handleExport}
-              style={{ display:'flex',alignItems:'center',gap:'7px',padding:'9px 18px',borderRadius:'50px',background:'var(--glass)',color:'var(--text)',border:'1px solid var(--glass-border)',fontSize:'13.5px',fontWeight:500,cursor:'pointer',fontFamily:'inherit',boxShadow:'var(--shadow)' }}>
-              <Download size={14} strokeWidth={2}/> Export
-            </motion.button>
-            <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }} onClick={()=>setShowModal(true)}
-              style={{ display:'flex',alignItems:'center',gap:'7px',padding:'9px 20px',borderRadius:'50px',background:'var(--accent)',color:'#fff',border:'none',fontSize:'13.5px',fontWeight:600,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 16px var(--accent-dim)' }}>
-              <Plus size={14} strokeWidth={2.5}/> Add Expense
-            </motion.button>
+
+          {/* Top Row Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2">
+              <TotalBalanceCard summary={summary} loading={loading} />
+            </div>
+            <div className="flex flex-col gap-6">
+              <IncomeExpenseCard type="income" summary={summary} loading={loading} />
+              <IncomeExpenseCard type="expense" summary={summary} loading={loading} />
+            </div>
+          </div>
+
+          {/* Bottom Row Charts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-[320px]">
+            <RevenueFlowCard moneyFlow={moneyFlow} loading={loading} />
+            <ExpenseSplitCard overview={overview} summary={summary} loading={loading} />
           </div>
         </div>
 
-        {/* 4-column grid */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1.45fr 1fr 1fr', gap:'16px' }}>
-          <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
-            <IncomeCard summary={summary} moneyFlow={moneyFlow} loading={loading}/>
-            <StrategyCard moneyFlow={moneyFlow} loading={loading}/>
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
-            <OverviewCard overview={overview} summary={summary} loading={loading}/>
-            <MoneyFlowCard moneyFlow={moneyFlow} loading={loading}/>
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
-            <FinancesCard user={user}/>
-            <WealthCard wealth={wealth} loading={loading}/>
-            <InsightsCard insights={insights} loading={loading} onDismiss={async (id:string)=>{ await insightsApi.dismiss(id); refetch(); }}/>
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:'16px' }}>
-            <AnomalyCard anomalies={anomalies} loading={loading} onResolve={async (id:string)=>{ await anomaliesApi.resolve(id); refetch(); }}/>
-            <PredictionCard prediction={prediction} loading={loading}/>
-          </div>
+        {/* Right Sidebar Area */}
+        <div className="w-full xl:w-[340px] bg-white dark:bg-ethereal-card border border-black/5 dark:border-white/5 rounded-[32px] p-6 shadow-2xl flex flex-col gap-8 min-h-0 transition-colors duration-300">
+          <MyCardsList user={user} wealth={wealth} loading={loading} />
+          <SubscriptionsList />
         </div>
+
       </div>
 
-      {showModal && <AddExpenseModal onClose={()=>setShowModal(false)} onSuccess={refetch}/>}
+      {showModal && <AddExpenseModal onClose={() => setShowModal(false)} onSuccess={refetch} />}
     </AppShell>
   );
 }

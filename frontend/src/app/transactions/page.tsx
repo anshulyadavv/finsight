@@ -24,8 +24,9 @@ export default function TransactionsPage() {
   const [search,     setSearch]     = useState('');
   const [typeFilt,   setTypeFilt]   = useState('');
   const [catFilt,    setCatFilt]    = useState('');
-  const [month,      setMonth]      = useState<string|undefined>();
+  const [month,      setMonth]      = useState<string|undefined>(new Date().toISOString().slice(0, 7));
   const [page,       setPage]       = useState(1);
+  const [summary,    setSummary]    = useState({ income: 0, expense: 0 });
 
   useEffect(() => { categoriesApi.list().then(r=>setCats(r.data.data||[])).catch(()=>{}); }, []);
 
@@ -40,6 +41,7 @@ export default function TransactionsPage() {
       const { data } = await txApi.list(p);
       setTxs(data.data.items||[]);
       setMeta(data.data.meta||{total:0,page:1,totalPages:1});
+      setSummary(data.data.summary || { income: 0, expense: 0 });
     } catch(e){ console.error(e); }
     finally { setLoading(false); }
   }, [page,search,typeFilt,catFilt,month]);
@@ -48,8 +50,8 @@ export default function TransactionsPage() {
 
   const handleDelete = async (id: string) => { await txApi.remove(id); setDeleteId(null); fetch(); };
 
-  const income  = txs.filter(t=>t.type==='income').reduce((s,t)=>s+Number(t.amount),0);
-  const expense = txs.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
+  const income  = summary.income;
+  const expense = summary.expense;
 
 
   if (authLoading||!user) return null;
@@ -72,9 +74,9 @@ export default function TransactionsPage() {
         {/* Summary cards */}
         <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'12px',marginBottom:'16px' }}>
           {[
-            { label:'Total Income',   val:fmt(income),          color:'var(--accent2)',  bg:'var(--accent2-dim)', icon:<ArrowUpCircle size={17} color="var(--accent2)"/> },
-            { label:'Total Expenses', val:fmt(expense),         color:'var(--accent3)',  bg:'var(--accent3-dim)', icon:<ArrowDownCircle size={17} color="var(--accent3)"/> },
-            { label:'Net Savings',    val:fmt(income-expense),  color: income-expense>=0?'var(--accent2)':'var(--accent3)', bg:'var(--accent2-dim)', icon:<TrendingUp size={17} color="var(--accent2)"/> },
+            { label: month ? 'Monthly Income' : 'Total Income',   val:fmt(income),          color:'var(--accent2)',  bg:'var(--accent2-dim)', icon:<ArrowUpCircle size={17} color="var(--accent2)"/> },
+            { label: month ? 'Monthly Expenses' : 'Total Expenses', val:fmt(expense),         color:'var(--accent3)',  bg:'var(--accent3-dim)', icon:<ArrowDownCircle size={17} color="var(--accent3)"/> },
+            { label: month ? 'Monthly Savings' : 'Net Savings',    val:fmt(income-expense),  color: income-expense>=0?'var(--accent2)':'var(--accent3)', bg:'var(--accent2-dim)', icon:<TrendingUp size={17} color="var(--accent2)"/> },
           ].map(s=>(
             <div key={s.label} className="glass" style={{ padding:'18px' }}>
               <div style={{ display:'flex',alignItems:'center',gap:'10px',marginBottom:'10px' }}>
@@ -88,19 +90,76 @@ export default function TransactionsPage() {
 
         {/* Filters */}
         <div className="glass-static" style={{ padding:'14px 16px',marginBottom:'14px',display:'flex',gap:'10px',flexWrap:'wrap',alignItems:'center',position:'relative',zIndex:20 }}>
-          <div style={{ display:'flex',alignItems:'center',gap:'8px',background:'var(--glass)',border:'1px solid var(--glass-border)',borderRadius:'10px',padding:'8px 14px',flex:1,minWidth:'200px' }}>
-            <Search size={13} color="var(--text3)"/>
-            <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="Search merchant or description…"
-              style={{ background:'none',border:'none',outline:'none',fontFamily:'inherit',fontSize:'13px',color:'var(--text)',width:'100%' }}/>
-            {search && <button onClick={()=>setSearch('')} style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text3)',padding:0 }}><X size={13}/></button>}
+          <div style={{ 
+            display:'flex',
+            alignItems:'center',
+            gap:'12px',
+            background:'var(--glass)',
+            border:'1px solid var(--glass-border)',
+            borderRadius:'50px',
+            padding:'10px 18px',
+            flex:1,
+            minWidth:'240px',
+            transition:'all 0.2s ease',
+          }}
+          className="focus-within:border-accent focus-within:bg-glass-hover focus-within:shadow-sm"
+          >
+            <Search size={16} className="text-gray-400 dark:text-gray-500" />
+            <input 
+              value={search} 
+              onChange={e=>{setSearch(e.target.value);setPage(1);}} 
+              placeholder="Search merchant or description…"
+              style={{ 
+                background:'none',
+                border:'none',
+                outline:'none',
+                fontFamily:'inherit',
+                fontSize:'15px',
+                lineHeight:'1.2',
+                color:'var(--text)',
+                width:'100%',
+                height:'24px',
+                padding:0,
+                boxShadow:'none',
+                appearance:'none'
+              }}
+            />
+            {search && (
+              <button 
+                onClick={()=>setSearch('')} 
+                className="hover:text-accent transition-colors"
+                style={{ background:'none',border:'none',cursor:'pointer',color:'var(--text3)',padding:0, display:'flex', alignItems:'center' }}
+              >
+                <X size={16}/>
+              </button>
+            )}
           </div>
           <Select value={typeFilt} onChange={v=>{setTypeFilt(v);setPage(1);}}
             options={[{value:'',label:'All types'},{value:'expense',label:'Expense'},{value:'income',label:'Income'},{value:'transfer',label:'Transfer'}]}/>
           <Select value={catFilt} onChange={v=>{setCatFilt(v);setPage(1);}}
             options={[{value:'',label:'All categories'},...cats.map((c:any)=>({value:c.id,label:c.name}))]}/>
           <MonthPicker value={month} onChange={v=>{setMonth(v);setPage(1);}}/>
-          {(search||typeFilt||catFilt||month) && (
-            <button onClick={()=>{setSearch('');setTypeFilt('');setCatFilt('');setMonth(undefined);setPage(1);}}
+          
+          <button 
+            onClick={() => { setMonth(month ? undefined : new Date().toISOString().slice(0, 7)); setPage(1); }}
+            style={{ 
+              padding:'8px 14px', 
+              borderRadius:'10px', 
+              background: !month ? 'var(--accent)' : 'var(--glass)', 
+              color: !month ? '#fff' : 'var(--text2)', 
+              border:'1px solid var(--glass-border)', 
+              fontSize:'13px', 
+              cursor:'pointer', 
+              fontFamily:'inherit', 
+              fontWeight:600,
+              transition: 'all 0.2s'
+            }}
+          >
+            {!month ? 'Viewing All Time' : 'Show All Time'}
+          </button>
+
+          {(search||typeFilt||catFilt||(month !== new Date().toISOString().slice(0, 7))) && (
+            <button onClick={()=>{setSearch('');setTypeFilt('');setCatFilt('');setMonth(new Date().toISOString().slice(0, 7));setPage(1);}}
               style={{ padding:'8px 14px',borderRadius:'10px',background:'var(--accent3-dim)',color:'var(--accent3)',border:'1px solid var(--accent3-dim)',fontSize:'13px',cursor:'pointer',fontFamily:'inherit',fontWeight:500 }}>
               Clear
             </button>
