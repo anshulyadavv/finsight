@@ -442,7 +442,7 @@ export function FinancesCard({ user }: any) {
           <motion.div key="empty" initial={{ opacity:0 }} animate={{ opacity:1 }}
             style={{ textAlign:'center',padding:'28px 0',border:'2px dashed var(--glass-border)',borderRadius:'14px' }}>
             <CreditCard size={28} color="var(--text3)" style={{ margin:'0 auto 10px',display:'block' }}/>
-            <p style={{ fontSize:'13px',color:'var(--text3)',lineHeight:1.5,margin:0 }}>No cards added.<br/>Click "Add card" to get started.</p>
+            <p style={{ fontSize:'13px',color:'var(--text3)',lineHeight:1.5,margin:0 }}>No cards added.<br/>Click &quot;Add card&quot; to get started.</p>
           </motion.div>
         ) : (
           <motion.div key="cards" initial={{ opacity:0 }} animate={{ opacity:1 }}>

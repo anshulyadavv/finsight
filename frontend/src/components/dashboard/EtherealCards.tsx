@@ -63,7 +63,7 @@ export function IncomeExpenseCard({ type, summary, loading }: any) {
         <p className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
           {isInc ? '+' : '-'}{loading ? '---' : fmt(val)}
         </p>
-        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 group-hover:text-gray-700 dark:group-hover:text-white/60 transition">This month's {type}</p>
+        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 group-hover:text-gray-700 dark:group-hover:text-white/60 transition">This month&apos;s {type}</p>
       </div>
     </motion.div>
   );

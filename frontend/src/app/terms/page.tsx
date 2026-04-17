@@ -76,7 +76,7 @@ export default function TermsPage() {
 
           <div className="bg-white rounded-[32px] p-8 md:p-12 border border-gray-200 shadow-sm relative overflow-hidden">
             <Section title="1. Acceptance of Terms">
-              <P>By accessing or using FinSight ("the Service"), you agree to be bound by these Terms of Service. If you do not agree to all the terms and conditions, you must not access or use the Service.</P>
+              <P>By accessing or using FinSight ({'"'}the Service{'"'}), you agree to be bound by these Terms of Service. If you do not agree to all the terms and conditions, you must not access or use the Service.</P>
               <P>These terms apply to all visitors, users, and others who access or use the Service.</P>
             </Section>
 
