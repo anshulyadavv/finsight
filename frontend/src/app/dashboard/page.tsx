@@ -53,7 +53,7 @@ export default function DashboardPage() {
 
         {/* Right Sidebar Area */}
         <div className="w-full xl:w-[340px] bg-white dark:bg-ethereal-card border border-black/5 dark:border-white/5 rounded-[32px] p-6 shadow-2xl flex flex-col gap-8 min-h-0 transition-colors duration-300">
-          <MyCardsList user={user} wealth={wealth} loading={loading} />
+          <MyCardsList />
           <SubscriptionsList />
         </div>
 

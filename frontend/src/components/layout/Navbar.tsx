@@ -63,13 +63,13 @@ export default function Navbar({ activeTab, onTabChange }: Props) {
   const tabs = ['Dashboard', 'Transactions', 'Insights', 'Predictions'];
 
   // ─── Search Logic ────────────────────────────────────────────────────────
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (searchQuery.length > 1) handleSearch();
       else setSearchResults(null);
     }, 500);
     return () => clearTimeout(delayDebounceFn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
   const handleSearch = async () => {
