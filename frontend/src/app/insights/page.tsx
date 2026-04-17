@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, TrendingUp, TrendingDown, AlertTriangle, Zap, DollarSign, ShieldAlert, X, RefreshCw, Layers } from 'lucide-react';
 import { insightsApi } from '@/lib/api';
@@ -22,6 +22,9 @@ const SEV_CFG: Record<string, { color: string; bg: string }> = {
   success: { color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
 };
 
+const STALE_PATTERNS = ['Infinity%', 'higher than weekday', 'Excellent! You\'re saving', 'Budget Exceeded:'];
+const isStale = (msg: string) => STALE_PATTERNS.some(p => msg.includes(p));
+
 export default function InsightsPage() {
   const { user, loading: authLoading } = useAuth();
   const [insights, setInsights] = useState<any[]>([]);
@@ -29,10 +32,7 @@ export default function InsightsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('all');
 
-  const STALE_PATTERNS = ['Infinity%', 'higher than weekday', 'Excellent! You\'re saving', 'Budget Exceeded:'];
-  const isStale = (msg: string) => STALE_PATTERNS.some(p => msg.includes(p));
-
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await insightsApi.list();
@@ -44,9 +44,9 @@ export default function InsightsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const dismiss = async (id: string) => {
     await insightsApi.dismiss(id);
@@ -157,7 +157,7 @@ export default function InsightsPage() {
               <Lightbulb size={32} className="text-gray-400" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Clear Skies</h3>
-            <p className="text-gray-500 dark:text-ethereal-textMuted max-w-xs text-center text-sm">No insights found in this category. We'll update you as soon as our AI detects something interesting.</p>
+            <p className="text-gray-500 dark:text-ethereal-textMuted max-w-xs text-center text-sm">No insights found in this category. We&apos;ll update you as soon as our AI detects something interesting.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
