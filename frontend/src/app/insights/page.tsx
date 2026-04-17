@@ -46,6 +46,7 @@ export default function InsightsPage() {
     }
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [load]);
 
   const dismiss = async (id: string) => {
@@ -157,7 +158,7 @@ export default function InsightsPage() {
               <Lightbulb size={32} className="text-gray-400" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Clear Skies</h3>
-            <p className="text-gray-500 dark:text-ethereal-textMuted max-w-xs text-center text-sm">No insights found in this category. We&apos;ll update you as soon as our AI detects something interesting.</p>
+            <p className="text-gray-500 dark:text-ethereal-textMuted max-w-xs text-center text-sm">No insights found in this category. We{"'"}ll update you as soon as our AI detects something interesting.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">

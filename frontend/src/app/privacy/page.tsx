@@ -76,7 +76,7 @@ export default function PrivacyPage() {
 
           <div className="bg-white rounded-[32px] p-8 md:p-12 border border-gray-200 shadow-sm relative overflow-hidden">
             <Section title="1. Introduction">
-              <P>FinSight ("we", "our", or "us") is committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our personal finance intelligence platform.</P>
+              <P>FinSight ({'"'}we{'"'}, {'"'}our{'"'}, or {'"'}us{'"'}) is committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our personal finance intelligence platform.</P>
               <P>Please read this policy carefully. If you disagree with its terms, please discontinue use of the platform.</P>
             </Section>
 
