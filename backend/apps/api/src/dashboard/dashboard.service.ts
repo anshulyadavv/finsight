@@ -30,41 +30,47 @@ export class DashboardService {
 
     const { start, end, monthStr } = this.resolveMonthRange(month);
 
-    const [income, expenses] = await Promise.all([
-      this.sumByType(userId, TransactionType.INCOME, start, end),
-      this.sumByType(userId, TransactionType.EXPENSE, start, end),
-    ]);
+    try {
+      const [income, expenses, globalWealth] = await Promise.all([
+        this.sumByType(userId, TransactionType.INCOME, start, end),
+        this.sumByType(userId, TransactionType.EXPENSE, start, end),
+        this.getWealth(userId),
+      ]);
 
-    // Previous month for trend
-    const prevStart = new Date(start);
-    prevStart.setMonth(prevStart.getMonth() - 1);
-    const prevEnd = new Date(end);
-    prevEnd.setMonth(prevEnd.getMonth() - 1);
+      // Previous month for trend
+      const prevStart = new Date(start);
+      prevStart.setMonth(prevStart.getMonth() - 1);
+      const prevEnd = new Date(end);
+      prevEnd.setMonth(prevEnd.getMonth() - 1);
 
-    const [prevIncome, prevExpenses] = await Promise.all([
-      this.sumByType(userId, TransactionType.INCOME, prevStart, prevEnd),
-      this.sumByType(userId, TransactionType.EXPENSE, prevStart, prevEnd),
-    ]);
+      const [prevIncome, prevExpenses] = await Promise.all([
+        this.sumByType(userId, TransactionType.INCOME, prevStart, prevEnd),
+        this.sumByType(userId, TransactionType.EXPENSE, prevStart, prevEnd),
+      ]);
 
-    const savings = income - expenses;
-    const savingsRate = income > 0 ? (savings / income) * 100 : 0;
+      const savings = income - expenses;
+      const savingsRate = income > 0 ? (savings / income) * 100 : 0;
 
-    const result = {
-      month: monthStr,
-      totalBalance:    savings,
-      monthlyIncome:   income,
-      monthlyExpenses: expenses,
-      savings,
-      savingsRate:     parseFloat(savingsRate.toFixed(1)),
-      trends: {
-        income:   this.calcTrend(prevIncome, income),
-        expenses: this.calcTrend(prevExpenses, expenses),
-        savings:  this.calcTrend(prevIncome - prevExpenses, savings),
-      },
-    };
+      const result = {
+        month: monthStr,
+        totalBalance:    (globalWealth as any).totalWealth,
+        monthlyIncome:   income,
+        monthlyExpenses: expenses,
+        savings,
+        savingsRate:     parseFloat(savingsRate.toFixed(1)),
+        trends: {
+          income:   this.calcTrend(prevIncome, income),
+          expenses: this.calcTrend(prevExpenses, expenses),
+          savings:  this.calcTrend(prevIncome - prevExpenses, savings),
+        },
+      };
 
-    await this.cache.set(cacheKey, result, this.CACHE_TTL);
-    return result;
+      await this.cache.set(cacheKey, result, (this.CACHE_TTL * 1000) as any);
+      return result;
+    } catch (err) {
+      this.logger.error(`Error in getSummary for user ${userId}: ${err.message}`, err.stack);
+      throw err;
+    }
   }
 
   // ─── GET /dashboard/overview ──────────────────────────────────────────────
@@ -81,7 +87,7 @@ export class DashboardService {
       .select('cat.name',  'category')
       .addSelect('cat.icon',  'icon')
       .addSelect('cat.color', 'color')
-      .addSelect('SUM(tx.amount)', 'total')
+      .addSelect('SUM(CAST(tx.amount AS NUMERIC))', 'total')
       .leftJoin('tx.category', 'cat')
       .where('tx.userId = :userId', { userId })
       .andWhere('tx.type = :type', { type: TransactionType.EXPENSE })
@@ -118,7 +124,7 @@ export class DashboardService {
           : null,
     };
 
-    await this.cache.set(cacheKey, result, this.CACHE_TTL);
+    await this.cache.set(cacheKey, result, (this.CACHE_TTL * 1000) as any);
     return result;
   }
 
@@ -138,12 +144,12 @@ export class DashboardService {
       .createQueryBuilder('tx')
       .select("TO_CHAR(tx.date, 'YYYY-MM')", 'month')
       .addSelect('tx.type', 'type')
-      .addSelect('SUM(tx.amount)', 'total')
+      .addSelect('SUM(CAST(tx.amount AS NUMERIC))', 'total')
       .where('tx.userId = :userId', { userId })
       .andWhere('tx.date BETWEEN :start AND :end', { start, end })
       .andWhere('tx.type IN (:...types)', { types: [TransactionType.INCOME, TransactionType.EXPENSE] })
       .groupBy("TO_CHAR(tx.date, 'YYYY-MM'), tx.type")
-      .orderBy("TO_CHAR(tx.date, 'YYYY-MM')", 'ASC')
+      .orderBy("month", 'ASC')
       .getRawMany() as { month: string; type: string; total: string }[];
 
     // Build month-indexed map
@@ -171,7 +177,7 @@ export class DashboardService {
       net:      vals.income - vals.expenses,
     }));
 
-    await this.cache.set(cacheKey, series, this.CACHE_TTL);
+    await this.cache.set(cacheKey, series, (this.CACHE_TTL * 1000) as any);
     return series;
   }
 
@@ -187,7 +193,7 @@ export class DashboardService {
       .createQueryBuilder('tx')
       .select('tx.paymentMethod', 'method')
       .addSelect(
-        `SUM(CASE WHEN tx.type = 'income' THEN tx.amount ELSE -tx.amount END)`,
+        `SUM(CASE WHEN tx.type = 'income' THEN CAST(tx.amount AS NUMERIC) ELSE -CAST(tx.amount AS NUMERIC) END)`,
         'balance',
       )
       .where('tx.userId = :userId', { userId })
@@ -203,7 +209,7 @@ export class DashboardService {
     const total = accounts.reduce((s, a) => s + a.balance, 0);
 
     const result = { totalWealth: total, accounts };
-    await this.cache.set(cacheKey, result, this.CACHE_TTL);
+    await this.cache.set(cacheKey, result, (this.CACHE_TTL * 1000) as any);
     return result;
   }
 
@@ -217,7 +223,7 @@ export class DashboardService {
   ): Promise<number> {
     const row = await this.txRepo
       .createQueryBuilder('tx')
-      .select('COALESCE(SUM(tx.amount), 0)', 'total')
+      .select('COALESCE(SUM(CAST(tx.amount AS NUMERIC)), 0)', 'total')
       .where('tx.userId = :userId', { userId })
       .andWhere('tx.type = :type', { type })
       .andWhere('tx.date BETWEEN :start AND :end', { start, end })

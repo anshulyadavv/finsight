@@ -17,7 +17,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-finiq}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-finiq} -d ${DB_NAME:-finiq_db}"]
       interval: 10s
       timeout: 5s
       retries: 5

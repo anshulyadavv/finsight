@@ -68,7 +68,7 @@ export class TransactionsService {
     const qb: SelectQueryBuilder<Transaction> = this.repo
       .createQueryBuilder('tx')
       .leftJoinAndSelect('tx.category', 'category')
-      .where('tx.userId = :userId', { userId });
+      .where('tx.user_id = :userId', { userId });
 
     if (query.month) {
       const [year, month] = query.month.split('-').map(Number);
@@ -87,6 +87,22 @@ export class TransactionsService {
     }
 
     const total = await qb.getCount();
+    
+    // Calculate monthly summary before pagination
+    const summaryQb = this.repo.createQueryBuilder('tx')
+      .select("SUM(CASE WHEN tx.type = 'income' THEN CAST(tx.amount AS NUMERIC) ELSE 0 END)", 'income')
+      .addSelect("SUM(CASE WHEN tx.type = 'expense' THEN CAST(tx.amount AS NUMERIC) ELSE 0 END)", 'expense')
+      .where('tx.user_id = :userId', { userId });
+
+    if (query.month) {
+      const [year, month] = query.month.split('-').map(Number);
+      const start = new Date(year, month - 1, 1);
+      const end   = new Date(year, month, 0, 23, 59, 59);
+      summaryQb.andWhere('tx.date BETWEEN :start AND :end', { start, end });
+    }
+
+    const summaryRaw = await summaryQb.getRawOne();
+
     const page  = query.page  || 1;
     const limit = query.limit || 20;
 
@@ -99,6 +115,10 @@ export class TransactionsService {
     return {
       items,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      summary: {
+        income: parseFloat(summaryRaw?.income || '0'),
+        expense: parseFloat(summaryRaw?.expense || '0'),
+      }
     };
   }
 

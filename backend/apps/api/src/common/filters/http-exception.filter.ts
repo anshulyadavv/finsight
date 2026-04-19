@@ -32,6 +32,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
           : message,
       path:      req.url,
       timestamp: new Date().toISOString(),
+      stack:     exception instanceof Error ? exception.stack : String(exception),
     };
 
     if (status >= 500) {

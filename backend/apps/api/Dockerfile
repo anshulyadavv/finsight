@@ -14,7 +14,7 @@ RUN npm run build
 FROM node:20-alpine AS production
 WORKDIR /app
 
-RUN apk add --no-cache python3 make g++
+RUN apk add --no-cache python3 make g++ curl curl
 RUN addgroup -g 1001 -S nodejs && adduser -S nestjs -u 1001
 
 COPY --from=builder --chown=nestjs:nodejs /app/package*.json ./

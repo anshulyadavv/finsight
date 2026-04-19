@@ -7,10 +7,14 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { User } from '../users/user.entity';
+import { Anomaly } from '../anomalies/anomaly.entity';
+import { Insight } from '../insights/insight.entity';
+import { Notification } from '../notifications/notification.entity';
+import { Transaction } from '../transactions/transaction.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Anomaly, Insight, Notification, Transaction]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({}), // secrets loaded dynamically in strategy
   ],

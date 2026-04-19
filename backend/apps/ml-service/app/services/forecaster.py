@@ -27,7 +27,7 @@ class ForecasterService:
         monthly_expense = expenses.resample("MS", on="date")["amount"].sum()
         monthly_income  = incomes.resample("MS", on="date")["amount"].sum()
 
-        if len(monthly_expense) < 2:
+        if len(monthly_expense) == 0:
             return self._empty_forecast()
 
         # ── Forecast expenses ────────────────────────────────────────────────

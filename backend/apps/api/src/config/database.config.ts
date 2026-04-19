@@ -6,7 +6,9 @@ export default registerAs('database', () => ({
   username:    process.env.DB_USERNAME || 'finiq',
   password:    process.env.DB_PASSWORD || 'finiq_secret',
   name:        process.env.DB_NAME     || 'finiq_db',
-  synchronize: process.env.DB_SYNCHRONIZE === 'true' || process.env.NODE_ENV !== 'production',
+  // Caution: synchronize: true is destructive and can wipe data if entities change.
+  // We recommend using migrations in production.
+  synchronize: process.env.DB_SYNCHRONIZE === 'true',
   logging:     process.env.DB_LOGGING  === 'true',
   ssl:         process.env.DB_SSL      === 'true',
 }));

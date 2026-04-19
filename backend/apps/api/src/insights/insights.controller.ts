@@ -1,5 +1,5 @@
 // insights.controller.ts
-import { Controller, Get, Patch, Param, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Patch, Delete, Param, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -35,5 +35,11 @@ export class InsightsController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.svc.dismiss(user.id, id);
+  }
+
+  @Delete('purge-stale')
+  @ApiOperation({ summary: 'Purge broken/legacy insight records for the current user' })
+  purgeStale(@CurrentUser() user: User) {
+    return this.svc.purgeStaleInsights(user.id);
   }
 }

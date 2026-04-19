@@ -6,7 +6,7 @@ import { Exclude } from 'class-transformer';
 import { Transaction } from '../transactions/transaction.entity';
 import { Budget } from '../budgets/budget.entity';
 import { Insight } from '../insights/insight.entity';
-import { Anomaly } from '../anomalies/anomaly.entity';
+import { Notification } from '../notifications/notification.entity';
 
 @Entity('users')
 export class User {
@@ -58,8 +58,11 @@ export class User {
   @OneToMany(() => Insight, (i) => i.user)
   insights: Insight[];
 
-  @OneToMany(() => Anomaly, (a) => a.user)
-  anomalies: Anomaly[];
+  @OneToMany(() => Notification, (n) => n.user)
+  notifications: Notification[];
+
+  @OneToMany('Anomaly', 'user')
+  anomalies: any[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

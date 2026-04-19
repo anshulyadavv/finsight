@@ -8,7 +8,7 @@ import * as webPush from 'web-push';
 import { User } from '../users/user.entity';
 import { Insight, InsightSeverity } from '../insights/insight.entity';
 import { Anomaly } from '../anomalies/anomaly.entity';
-import { Budget } from '../budgets/budget.entity';
+import { Notification, NotificationType } from './notification.entity';
 import { Transaction, TransactionType } from '../transactions/transaction.entity';
 
 @Injectable()
@@ -17,16 +17,16 @@ export class NotificationsService {
   private transporter: nodemailer.Transporter;
 
   constructor(
+    @InjectRepository(Notification) private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Insight) private readonly insightRepo: Repository<Insight>,
     @InjectRepository(Anomaly) private readonly anomalyRepo: Repository<Anomaly>,
-    @InjectRepository(Budget) private readonly budgetRepo: Repository<Budget>,
     @InjectRepository(Transaction) private readonly txRepo: Repository<Transaction>,
     private readonly configService: ConfigService,
   ) {
     this.transporter = nodemailer.createTransport({
-      host:   configService.get('SMTP_HOST') || 'smtp.gmail.com',
-      port:   parseInt(configService.get('SMTP_PORT') || '587'),
+      host: configService.get('SMTP_HOST') || 'smtp.gmail.com',
+      port: parseInt(configService.get('SMTP_PORT') || '587'),
       secure: configService.get('SMTP_SECURE') === 'true',
       auth: {
         user: configService.get('SMTP_USER'),
@@ -34,28 +34,68 @@ export class NotificationsService {
       },
     });
 
-    const vapidPublic  = configService.get<string>('VAPID_PUBLIC_KEY');
+    const vapidPublic = configService.get<string>('VAPID_PUBLIC_KEY');
     const vapidPrivate = configService.get<string>('VAPID_PRIVATE_KEY');
     if (vapidPublic && vapidPrivate) {
       webPush.setVapidDetails(
-        `mailto:${configService.get('VAPID_EMAIL') || 'noreply@finiq.app'}`,
+        `mailto:${configService.get('VAPID_EMAIL') || 'noreply@finsight.app'}`,
         vapidPublic,
         vapidPrivate,
       );
     }
   }
 
-  // ─── Send immediate anomaly alert ────────────────────────────────────────
+  // ─── Persistence Logic ───────────────────────────────────────────────
+
+  async create(user: User, data: Partial<Notification>) {
+    const notify = this.notificationRepo.create({
+      ...data,
+      user,
+      isRead: false,
+      isArchived: false,
+    });
+    return this.notificationRepo.save(notify);
+  }
+
+  async list(user: User) {
+    return this.notificationRepo.find({
+      where: { user: { id: user.id }, isArchived: false },
+      order: { createdAt: 'DESC' },
+      take: 50,
+    });
+  }
+
+  async markAsRead(id: string) {
+    return this.notificationRepo.update(id, { isRead: true });
+  }
+
+  async markAllAsRead(user: User) {
+    return this.notificationRepo.update({ user: { id: user.id }, isRead: false }, { isRead: true });
+  }
+
+  async archive(id: string) {
+    return this.notificationRepo.update(id, { isArchived: true });
+  }
+
+  // ─── Alerts ──────────────────────────────────────────────────────────
 
   async sendAnomalyAlert(userId: string, anomaly: Anomaly) {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) return;
 
+    // Persist in-app notification
+    await this.create(user, {
+      title: '⚠️ Anomaly Detected',
+      message: anomaly.message,
+      type: NotificationType.ANOMALY,
+      metadata: { anomalyId: anomaly.id },
+    });
+
     const payload = {
-      title:   '⚠️ Anomaly Detected',
-      body:    anomaly.message,
-      icon:    '/icons/alert.png',
-      data:    { type: 'anomaly', id: anomaly.id },
+      title: '⚠️ Anomaly Detected',
+      body: anomaly.message,
+      icon: '/icons/alert.png',
+      data: { type: 'anomaly', id: anomaly.id },
     };
 
     if (user.notificationPush && user.pushSubscription) {
@@ -63,15 +103,39 @@ export class NotificationsService {
     }
 
     if (user.notificationEmail) {
-      await this.sendEmail(user.email, '⚠️ Unusual Transaction Detected — FinIQ', `
+      await this.sendEmail(user.email, '⚠️ Unusual Transaction Detected — FinSight', `
         <h2>Anomaly Alert</h2>
         <p>${anomaly.message}</p>
-        <p>Please review your recent transactions in the FinIQ dashboard.</p>
+        <p>Please review your recent transactions in the FinSight dashboard.</p>
       `);
     }
   }
 
-  // ─── Cron: Daily digest at 8 AM ──────────────────────────────────────────
+  // ─── Internal Helpers ────────────────────────────────────────────────
+
+  private async sendEmail(to: string, subject: string, html: string) {
+    if (!this.configService.get('SMTP_USER')) {
+      this.logger.debug(`[EMAIL SKIPPED] To: ${to}, Subject: ${subject}`);
+      return;
+    }
+    await this.transporter.sendMail({
+      from: `"FinSight" <${this.configService.get('SMTP_USER')}>`,
+      to,
+      subject,
+      html: `<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">${html}</div>`,
+    });
+  }
+
+  private async sendPush(subscription: object, payload: object) {
+    try {
+      await webPush.sendNotification(
+        subscription as webPush.PushSubscription,
+        JSON.stringify(payload),
+      );
+    } catch (err) {
+      this.logger.warn(`Push notification failed: ${(err as Error).message}`);
+    }
+  }
 
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async sendDailyDigest() {
@@ -89,53 +153,8 @@ export class NotificationsService {
     }
   }
 
-  // ─── Cron: Weekly insights summary Sunday 9 AM ───────────────────────────
-
-  @Cron('0 9 * * 0')
-  async sendWeeklyInsights() {
-    this.logger.log('Sending weekly insights…');
-    const users = await this.userRepo.find({ where: { isActive: true } });
-
-    for (const user of users) {
-      const insights = await this.insightRepo.find({
-        where: { userId: user.id, isRead: false },
-        order: { createdAt: 'DESC' },
-        take: 5,
-      });
-
-      if (insights.length === 0) continue;
-
-      const alertInsights = insights.filter((i) => i.severity === InsightSeverity.ALERT);
-      if (alertInsights.length === 0 && !user.notificationEmail) continue;
-
-      const insightHtml = insights
-        .map((i) => `<li>${i.message}</li>`)
-        .join('');
-
-      await this.sendEmail(
-        user.email,
-        `📊 Your Weekly FinIQ Insights`,
-        `<h2>Hi ${user.name},</h2>
-         <p>Here are your top financial insights this week:</p>
-         <ul>${insightHtml}</ul>
-         <p><a href="https://finiq.app/dashboard">View full dashboard →</a></p>`,
-      );
-    }
-  }
-
-  // ─── Register push subscription ──────────────────────────────────────────
-
-  async registerPushSubscription(userId: string, subscription: object) {
-    await this.userRepo.update(userId, {
-      pushSubscription: subscription,
-      notificationPush: true,
-    });
-  }
-
-  // ─── Private helpers ──────────────────────────────────────────────────────
-
   private async sendDailyDigestEmail(user: User) {
-    const now   = new Date();
+    const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const [income, expenses, anomalyCount, unreadInsights] = await Promise.all([
@@ -149,7 +168,7 @@ export class NotificationsService {
 
     await this.sendEmail(
       user.email,
-      `💰 Your FinIQ Daily — ${now.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}`,
+      `💰 Your FinSight Daily — ${now.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' })}`,
       `<h2>Good morning, ${user.name}!</h2>
        <table>
          <tr><td>Monthly Income</td><td>₹${income.toLocaleString('en-IN')}</td></tr>
@@ -157,45 +176,11 @@ export class NotificationsService {
          <tr><td>Net Savings</td><td>₹${savings.toLocaleString('en-IN')}</td></tr>
        </table>
        ${anomalyCount > 0 ? `<p>⚠️ ${anomalyCount} unresolved anomalies detected.</p>` : ''}
-       ${unreadInsights > 0 ? `<p>💡 ${unreadInsights} new insights available.</p>` : ''}
-       <p><a href="https://finiq.app/dashboard">Open Dashboard →</a></p>`,
+       ${unreadInsights > 0 ? `<p>💡 ${unreadInsights} new insights available.</p>` : ''}`,
     );
   }
 
-  private async sendEmail(to: string, subject: string, html: string) {
-    if (!this.configService.get('SMTP_USER')) {
-      this.logger.debug(`[EMAIL SKIPPED] To: ${to}, Subject: ${subject}`);
-      return;
-    }
-    await this.transporter.sendMail({
-      from:    `"FinIQ" <${this.configService.get('SMTP_USER')}>`,
-      to,
-      subject,
-      html: `
-        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px">
-          ${html}
-          <hr/><p style="color:#6b7280;font-size:12px">
-            FinIQ · Personal Finance Intelligence ·
-            <a href="https://finiq.app/settings/notifications">Manage notifications</a>
-          </p>
-        </div>`,
-    });
-  }
-
-  private async sendPush(subscription: object, payload: object) {
-    try {
-      await webPush.sendNotification(
-        subscription as webPush.PushSubscription,
-        JSON.stringify(payload),
-      );
-    } catch (err) {
-      this.logger.warn(`Push notification failed: ${(err as Error).message}`);
-    }
-  }
-
-  private async sumType(
-    userId: string, type: TransactionType, start: Date, end: Date,
-  ): Promise<number> {
+  private async sumType(userId: string, type: TransactionType, start: Date, end: Date): Promise<number> {
     const r = await this.txRepo
       .createQueryBuilder('tx')
       .select('COALESCE(SUM(tx.amount), 0)', 'total')

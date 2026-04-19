@@ -16,10 +16,19 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   // CORS
+  // CORS
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+  ];
+  
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    origin: allowedOrigins,
     credentials: true,
   });
+  
+  logger.log(`CORS enabled for origins: ${allowedOrigins.join(', ')}`);
 
   // Global pipes
   app.useGlobalPipes(
@@ -58,10 +67,13 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT || 3001;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
+  
+  const serverUrl = `http://localhost:${port}/api/v1`;
+  const swaggerUrl = `http://localhost:${port}/api/docs`;
 
-  logger.log(`🚀 FinIQ API running on http://localhost:${port}/api/v1`);
-  logger.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
+  logger.log(`🚀 FinIQ API running on ${serverUrl}`);
+  logger.log(`📚 Swagger docs: ${swaggerUrl}`);
 }
 
 bootstrap();

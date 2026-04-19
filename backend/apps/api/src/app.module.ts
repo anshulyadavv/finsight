@@ -5,8 +5,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bull';
 import { CacheModule } from '@nestjs/cache-manager';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const redisStore = require('cache-manager-redis-store');
+import { redisStore } from 'cache-manager-redis-yet';
 
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -19,6 +18,15 @@ import { PredictionsModule } from './predictions/predictions.module';
 import { BudgetsModule } from './budgets/budgets.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { CategorizationModule } from './categorization/categorization.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
+import { CardsModule } from './cards/cards.module';
+import { SearchModule } from './search/search.module';
+import { HealthController } from './common/controllers/health.controller';
+import { Transaction } from './transactions/transaction.entity';
+import { Category } from './categories/category.entity';
+import { Card } from './cards/card.entity';
+import { Notification } from './notifications/notification.entity';
+import { User } from './users/user.entity';
 
 import databaseConfig from './config/database.config';
 import redisConfig from './config/redis.config';
@@ -52,16 +60,19 @@ import mlConfig from './config/ml.config';
       }),
     }),
 
-    // Redis Cache
+    // Cache
     CacheModule.registerAsync({
       isGlobal: true,
       inject: [ConfigService],
-      useFactory: (cfg: ConfigService): any => ({
-        store: redisStore,
-        host: cfg.get('redis.host'),
-        port: cfg.get('redis.port'),
-        password: cfg.get('redis.password') || undefined,
-        ttl: 300,
+      useFactory: async (cfg: ConfigService) => ({
+        store: await redisStore({
+          socket: {
+            host: cfg.get('redis.host'),
+            port: cfg.get('redis.port'),
+          },
+          password: cfg.get('redis.password'),
+          ttl: cfg.get('redis.ttl') * 1000, // milliseconds
+        }),
       }),
     }),
 
@@ -99,6 +110,10 @@ import mlConfig from './config/ml.config';
     BudgetsModule,
     NotificationsModule,
     CategorizationModule,
+    SubscriptionsModule,
+    CardsModule,
+    SearchModule,
   ],
+  controllers: [HealthController],
 })
 export class AppModule {}
