@@ -6,3 +6,6 @@ out/
 dist/
 .DS_Store
 .env
+*.sql
+finsight_summary.txt
+issues.txt
