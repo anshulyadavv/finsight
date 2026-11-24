@@ -14,7 +14,7 @@ export default function ContactPage() {
       <header className="relative z-50 pt-8 px-6">
         <div className="flex items-center justify-between max-w-[1200px] mx-auto pointer-events-auto">
           <Link href="/" className="z-10 group focus:outline-none">
-            <Logo />
+            <Logo variant="light" />
           </Link>
           <div className="hidden md:flex items-center gap-8 z-10">
             <Link href="/login" className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-full text-[15px] font-bold transition-colors">Login</Link>

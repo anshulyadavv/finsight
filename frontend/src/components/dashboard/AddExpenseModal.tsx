@@ -32,6 +32,11 @@ export default function AddExpenseModal({ onClose, onSuccess, editData }: Props)
     categoriesApi.list().then(r => setCategories(r.data.data||[])).catch(()=>{});
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = 'unset'; };
+  }, []);
+
   const catOptions = [
     { value:'', label:'Auto-detect' },
     ...categories.map((c:any) => ({ value: c.id, label: c.name })),
@@ -136,13 +141,13 @@ export default function AddExpenseModal({ onClose, onSuccess, editData }: Props)
 
             {/* Date */}
             <div style={{ position:'relative', zIndex:10 }}>
-              <DatePicker value={date} onChange={setDate} label="Date"/>
+              <DatePicker value={date} onChange={setDate} label="Date" forceDown={true} />
             </div>
 
             {/* Category + Payment */}
             <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px' }}>
-              <Select value={categoryId} onChange={setCategoryId} options={catOptions} label="Category"/>
-              <Select value={payment} onChange={setPayment} options={PAYMENT_OPTIONS} label="Payment"/>
+              <Select value={categoryId} onChange={setCategoryId} options={catOptions} label="Category" forceDown={true} />
+              <Select value={payment} onChange={setPayment} options={PAYMENT_OPTIONS} label="Payment" forceDown={true} />
             </div>
 
             <motion.button

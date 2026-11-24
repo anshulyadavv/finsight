@@ -118,3 +118,35 @@ export const searchApi = {
   global: (q: string) => api.get('/search', { params: { q } }),
 };
 
+// ── Assets ────────────────────────────────────────────────────────────────────
+export const assetsApi = {
+  getNetWorth: () => api.get('/net-worth'),
+  
+  getAssets: () => api.get('/assets'),
+  createAsset: (data: any) => api.post('/assets', data),
+  updateAsset: (id: string, data: any) => api.patch(`/assets/${id}`, data),
+  deleteAsset: (id: string) => api.delete(`/assets/${id}`),
+
+  getLiabilities: () => api.get('/liabilities'),
+  createLiability: (data: any) => api.post('/liabilities', data),
+  updateLiability: (id: string, data: any) => api.patch(`/liabilities/${id}`, data),
+  deleteLiability: (id: string) => api.delete(`/liabilities/${id}`),
+
+  getIncomeSources: () => api.get('/income-sources'),
+  createIncomeSource: (data: any) => api.post('/income-sources', data),
+  updateIncomeSource: (id: string, data: any) => api.patch(`/income-sources/${id}`, data),
+  deleteIncomeSource: (id: string) => api.delete(`/income-sources/${id}`),
+};
+
+// ── Goals ─────────────────────────────────────────────────────────────────────
+export const goalsApi = {
+  list: () => api.get('/goals'),
+  get: (id: string) => api.get(`/goals/${id}`),
+  create: (data: any) => api.post('/goals', data),
+  update: (id: string, data: any) => api.patch(`/goals/${id}`, data),
+  delete: (id: string) => api.delete(`/goals/${id}`),
+  invite: (id: string, inviteeId: string) => api.post(`/goals/${id}/invite`, { inviteeId }),
+  contribute: (id: string, data: any) => api.post(`/goals/${id}/contribute`, data),
+  progress: (id: string) => api.get(`/goals/${id}/progress`),
+};
+

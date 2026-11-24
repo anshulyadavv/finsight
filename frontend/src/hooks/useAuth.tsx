@@ -51,8 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { await authApi.logout(); } catch {}
     Cookies.remove('accessToken');
     Cookies.remove('refreshToken');
-    setUser(null);
-    window.location.href = '/login';
+    window.location.href = '/';
   };
 
   return (

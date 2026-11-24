@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, TrendingUp, TrendingDown, AlertTriangle, Zap, DollarSign, ShieldAlert, X, RefreshCw, Layers } from 'lucide-react';
 import { insightsApi } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
-import AppShell from '@/components/layout/AppShell';
 
 const TYPE_CFG: Record<string, { label: string; icon: any; color: string; bg: string }> = {
   spending_pattern: { label: 'Spending', icon: TrendingUp, color: '#a855f7', bg: 'rgba(168, 85, 247, 0.15)' },
@@ -25,7 +24,7 @@ const SEV_CFG: Record<string, { color: string; bg: string }> = {
 const STALE_PATTERNS = ['Infinity%', 'higher than weekday', 'Excellent! You\'re saving', 'Budget Exceeded:'];
 const isStale = (msg: string) => STALE_PATTERNS.some(p => msg.includes(p));
 
-export default function InsightsPage() {
+export function InsightsTab() {
   const { user, loading: authLoading } = useAuth();
   const [insights, setInsights] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,7 +71,7 @@ export default function InsightsPage() {
   if (authLoading || !user) return null;
 
   return (
-    <AppShell>
+    
       <div className="p-8 max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
@@ -277,6 +276,6 @@ export default function InsightsPage() {
           </div>
         )}
       </div>
-    </AppShell>
+    
   );
 }

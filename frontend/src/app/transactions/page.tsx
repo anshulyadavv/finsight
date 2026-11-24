@@ -12,7 +12,10 @@ import { Select } from '@/components/ui/Select';
 const PAY: Record<string,string> = { upi:'UPI',card:'Card',netbanking:'Net Banking',cash:'Cash',wallet:'Wallet',other:'Other' };
 const fmt = (n: number) => '₹' + Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 
+import { InsightsTab } from './InsightsTab';
+
 export default function TransactionsPage() {
+  const [activeTab, setActiveTab] = useState<'transactions'|'insights'>('transactions');
   const { user, loading: authLoading } = useAuth();
   const [txs,        setTxs]        = useState<any[]>([]);
   const [cats,       setCats]       = useState<any[]>([]);
@@ -62,8 +65,23 @@ export default function TransactionsPage() {
         {/* Header */}
         <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'20px' }}>
           <div>
-            <h1 style={{ fontSize:'26px',fontWeight:700,letterSpacing:'-0.5px',color:'var(--text)',margin:0 }}>Transactions</h1>
-            <p style={{ fontSize:'13px',color:'var(--text2)',marginTop:'3px' }}>{meta.total} total transactions</p>
+
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button 
+                onClick={() => setActiveTab('transactions')}
+                style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer', textAlign: 'left' }}
+              >
+                <h1 style={{ fontSize:'26px',fontWeight:900,letterSpacing:'-0.5px',color:activeTab === 'transactions' ? 'var(--text)' : 'var(--text3)',margin:0, transition: 'color 0.2s' }}>Transactions</h1>
+              </button>
+              <button 
+                onClick={() => setActiveTab('insights')}
+                style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer', textAlign: 'left' }}
+              >
+                <h1 style={{ fontSize:'26px',fontWeight:900,letterSpacing:'-0.5px',color:activeTab === 'insights' ? 'var(--text)' : 'var(--text3)',margin:0, transition: 'color 0.2s' }}>AI Insights</h1>
+              </button>
+            </div>
+            {activeTab === 'transactions' && <p style={{ fontSize:'13px',color:'var(--text2)',marginTop:'3px' }}>{meta.total} total transactions</p>}
+
           </div>
           <motion.button whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }} onClick={()=>setShowModal(true)}
             style={{ display:'flex',alignItems:'center',gap:'7px',padding:'9px 20px',borderRadius:'50px',background:'var(--accent)',color:'#fff',border:'none',fontSize:'13.5px',fontWeight:600,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 16px var(--accent-dim)' }}>
@@ -71,6 +89,8 @@ export default function TransactionsPage() {
           </motion.button>
         </div>
 
+        {activeTab === 'transactions' ? (
+          <>
         {/* Summary cards */}
         <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'12px',marginBottom:'16px' }}>
           {[
@@ -239,6 +259,10 @@ export default function TransactionsPage() {
             </div>
           )}
         </div>
+          </>
+        ) : (
+          <InsightsTab />
+        )}
       </div>
 
       {/* Delete confirm */}

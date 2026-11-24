@@ -7,14 +7,14 @@ const MONTHS_FULL  = ['January','February','March','April','May','June','July','
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DAYS         = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
-function popupPosition(trigRef: React.RefObject<HTMLElement>, pw: number, ph: number): React.CSSProperties {
+function popupPosition(trigRef: React.RefObject<HTMLElement>, pw: number, ph: number, forceDown = false): React.CSSProperties {
   if (typeof window === 'undefined' || !trigRef.current) return { top:'calc(100% + 8px)',left:0 };
   const r  = trigRef.current.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
 
   const goLeft  = r.left + pw > vw  ? { right: 0, left: 'auto' } : { left: 0, right: 'auto' };
-  const goAbove = r.bottom + ph > vh ? { bottom:'calc(100% + 8px)',top:'auto' } : { top:'calc(100% + 8px)',bottom:'auto' };
+  const goAbove = (!forceDown && r.bottom + ph > vh) ? { bottom:'calc(100% + 8px)',top:'auto' } : { top:'calc(100% + 8px)',bottom:'auto' };
 
   return { ...goLeft, ...goAbove };
 }
@@ -32,7 +32,7 @@ const POPUP: React.CSSProperties = {
 const btnReset: React.CSSProperties = { border:'none',background:'transparent',cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s' };
 
 // ── Month Picker (dashboard filter) ──────────────────────────────────────────
-export function MonthPicker({ value, onChange }: { value?: string; onChange: (v: string|undefined) => void }) {
+export function MonthPicker({ value, onChange, allowFuture = false, forceDown = false }: { value?: string; onChange: (v: string|undefined) => void; allowFuture?: boolean; forceDown?: boolean }) {
   const [open,  setOpen]  = useState(false);
   const [mode,  setMode]  = useState<'months'|'years'>('months');
   const ref     = useRef<HTMLDivElement>(null);
@@ -44,8 +44,8 @@ export function MonthPicker({ value, onChange }: { value?: string; onChange: (v:
   const [pos,   setPos]   = useState<React.CSSProperties>({});
 
   useEffect(() => {
-    if (open && trigRef.current) setPos(popupPosition(trigRef, 260, 320));
-  }, [open]);
+    if (open && trigRef.current) setPos(popupPosition(trigRef, 260, 320, forceDown));
+  }, [open, forceDown]);
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if(ref.current&&!ref.current.contains(e.target as Node)) setOpen(false); };
@@ -58,7 +58,7 @@ export function MonthPicker({ value, onChange }: { value?: string; onChange: (v:
     : `${MONTHS_SHORT[now.getMonth()]} ${now.getFullYear()}`;
 
   const pickMonth = (m: number) => {
-    if (new Date(viewY,m,1) >= new Date(now.getFullYear(),now.getMonth()+1,1)) return;
+    if (!allowFuture && new Date(viewY,m,1) >= new Date(now.getFullYear(),now.getMonth()+1,1)) return;
     const str = `${viewY}-${String(m+1).padStart(2,'0')}`;
     const ns  = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     onChange(str===ns ? undefined : str);
@@ -67,7 +67,7 @@ export function MonthPicker({ value, onChange }: { value?: string; onChange: (v:
 
   // Year range for quick-jump
   const startYear = Math.floor(viewY/10)*10;
-  const years     = Array.from({length:12},(_,i)=>startYear+i).filter(y=>y<=now.getFullYear());
+  const years     = Array.from({length:12},(_,i)=>startYear+i).filter(y=>allowFuture || y<=now.getFullYear());
 
   return (
     <div ref={ref} style={{ position:'relative' }}>
@@ -96,9 +96,9 @@ export function MonthPicker({ value, onChange }: { value?: string; onChange: (v:
                 {mode==='years' ? `${startYear}–${startYear+11}` : viewY}
                 <ChevronRight size={11} style={{ marginLeft:4,transform:mode==='years'?'rotate(90deg)':'none',transition:'transform 0.2s',display:'inline' }}/>
               </button>
-              <button onClick={()=>setViewY(v=>Math.min(v+1,now.getFullYear()))} disabled={viewY>=now.getFullYear()}
-                style={{ ...btnReset,width:28,height:28,borderRadius:'50%',background:viewY>=now.getFullYear()?'transparent':'var(--glass)',color:viewY>=now.getFullYear()?'var(--text3)':'var(--text2)',display:'flex',alignItems:'center',justifyContent:'center',cursor:viewY>=now.getFullYear()?'not-allowed':'pointer' }}
-                onMouseEnter={e=>{if(viewY<now.getFullYear())e.currentTarget.style.background='var(--glass-hover)';}} onMouseLeave={e=>{if(viewY<now.getFullYear())e.currentTarget.style.background='var(--glass)';}}>
+              <button onClick={()=>setViewY(v=>allowFuture?v+1:Math.min(v+1,now.getFullYear()))} disabled={!allowFuture && viewY>=now.getFullYear()}
+                style={{ ...btnReset,width:28,height:28,borderRadius:'50%',background:(!allowFuture && viewY>=now.getFullYear())?'transparent':'var(--glass)',color:(!allowFuture && viewY>=now.getFullYear())?'var(--text3)':'var(--text2)',display:'flex',alignItems:'center',justifyContent:'center',cursor:(!allowFuture && viewY>=now.getFullYear())?'not-allowed':'pointer' }}
+                onMouseEnter={e=>{if(allowFuture || viewY<now.getFullYear())e.currentTarget.style.background='var(--glass-hover)';}} onMouseLeave={e=>{if(allowFuture || viewY<now.getFullYear())e.currentTarget.style.background='var(--glass)';}}>
                 <ChevronRight size={13}/>
               </button>
             </div>
@@ -120,15 +120,16 @@ export function MonthPicker({ value, onChange }: { value?: string; onChange: (v:
               <div style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'5px' }}>
                 {MONTHS_SHORT.map((m,i) => {
                   const future = new Date(viewY,i,1)>=new Date(now.getFullYear(),now.getMonth()+1,1);
+                  const disabledMonth = !allowFuture && future;
                   const sel    = !future && value && parseInt(value.split('-')[1])-1===i && parseInt(value.split('-')[0])===viewY;
                   const isNow  = !value && i===now.getMonth() && viewY===now.getFullYear();
                   const active = sel || isNow;
                   return (
-                    <button key={m} onClick={()=>!future&&pickMonth(i)} disabled={!!future}
+                    <button key={m} onClick={()=>!disabledMonth&&pickMonth(i)} disabled={!!disabledMonth}
                       style={{ ...btnReset,padding:'8px 4px',borderRadius:'9px',fontSize:'12.5px',fontWeight:active?700:400,
                         background:active?'var(--accent)':'transparent',
-                        color:active?'#fff':future?'var(--text3)':'var(--text2)',cursor:future?'not-allowed':'pointer' }}
-                      onMouseEnter={e=>{if(!future&&!active)e.currentTarget.style.background='var(--glass-hover)';}}
+                        color:active?'#fff':disabledMonth?'var(--text3)':'var(--text2)',cursor:disabledMonth?'not-allowed':'pointer' }}
+                      onMouseEnter={e=>{if(!disabledMonth&&!active)e.currentTarget.style.background='var(--glass-hover)';}}
                       onMouseLeave={e=>{if(!active)e.currentTarget.style.background='transparent';}}>
                       {m}
                     </button>
@@ -151,7 +152,7 @@ export function MonthPicker({ value, onChange }: { value?: string; onChange: (v:
 }
 
 // ── Full Date Picker ──────────────────────────────────────────────────────────
-export function DatePicker({ value, onChange, label }: { value: string; onChange: (v:string)=>void; label?: string }) {
+export function DatePicker({ value, onChange, label, allowFuture = false, forceDown = false }: { value: string; onChange: (v:string)=>void; label?: string; allowFuture?: boolean; forceDown?: boolean }) {
   const [open,  setOpen]  = useState(false);
   const [mode,  setMode]  = useState<'days'|'months'|'years'>('days');
   const ref     = useRef<HTMLDivElement>(null);
@@ -164,8 +165,8 @@ export function DatePicker({ value, onChange, label }: { value: string; onChange
   const [pos,   setPos]   = useState<React.CSSProperties>({});
 
   useEffect(() => {
-    if (open && trigRef.current) setPos(popupPosition(trigRef, 294, 380));
-  }, [open]);
+    if (open && trigRef.current) setPos(popupPosition(trigRef, 294, 380, forceDown));
+  }, [open, forceDown]);
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if(ref.current&&!ref.current.contains(e.target as Node)) setOpen(false); };
@@ -194,16 +195,16 @@ export function DatePicker({ value, onChange, label }: { value: string; onChange
   const prevM = () => { if(viewM===0){setViewM(11);setViewY(y=>y-1);}else setViewM(m=>m-1); };
   const nextM = () => {
     const nx=new Date(viewY,viewM+1,1);
-    if(nx>today) return;
+    if(!allowFuture && nx>today) return;
     if(viewM===11){setViewM(0);setViewY(y=>y+1);}else setViewM(m=>m+1);
   };
 
   const isSel = (d:number) => { if(!value)return false; const dt=new Date(value+'T00:00:00'); return dt.getFullYear()===viewY&&dt.getMonth()===viewM&&dt.getDate()===d; };
   const isTod = (d:number) => today.getFullYear()===viewY&&today.getMonth()===viewM&&today.getDate()===d;
-  const isFut = (d:number) => new Date(viewY,viewM,d)>today;
+  const isFut = (d:number) => !allowFuture && new Date(viewY,viewM,d)>today;
 
   const startYear = Math.floor(viewY/10)*10;
-  const years     = Array.from({length:12},(_,i)=>startYear+i).filter(y=>y<=today.getFullYear());
+  const years     = Array.from({length:12},(_,i)=>startYear+i).filter(y=>allowFuture || y<=today.getFullYear());
 
   return (
     <div ref={ref} style={{ position:'relative' }}>
@@ -240,8 +241,8 @@ export function DatePicker({ value, onChange, label }: { value: string; onChange
               </button>
 
               <button type="button" onClick={mode==='days'?nextM:()=>setViewY(y=>y+(mode==='months'?1:10))}
-                disabled={mode==='days'&&new Date(viewY,viewM+1,1)>today}
-                style={{ ...btnReset,width:28,height:28,borderRadius:'50%',background:'var(--glass)',color:'var(--text2)',display:'flex',alignItems:'center',justifyContent:'center',opacity:mode==='days'&&new Date(viewY,viewM+1,1)>today?0.3:1,cursor:mode==='days'&&new Date(viewY,viewM+1,1)>today?'not-allowed':'pointer' }}
+                disabled={!allowFuture && mode==='days'&&new Date(viewY,viewM+1,1)>today}
+                style={{ ...btnReset,width:28,height:28,borderRadius:'50%',background:'var(--glass)',color:'var(--text2)',display:'flex',alignItems:'center',justifyContent:'center',opacity:!allowFuture&&mode==='days'&&new Date(viewY,viewM+1,1)>today?0.3:1,cursor:!allowFuture&&mode==='days'&&new Date(viewY,viewM+1,1)>today?'not-allowed':'pointer' }}
                 onMouseEnter={e=>(e.currentTarget.style.background='var(--glass-hover)')} onMouseLeave={e=>(e.currentTarget.style.background='var(--glass)')}>
                 {mode==='years'?<ChevronsRight size={13}/>:<ChevronRight size={14}/>}
               </button>
@@ -268,11 +269,12 @@ export function DatePicker({ value, onChange, label }: { value: string; onChange
                 {MONTHS_SHORT.map((m,i)=>{
                   const future=new Date(viewY,i,1)>today;
                   const active=i===viewM;
+                  const disabledMonth = !allowFuture && future;
                   return (
-                    <button key={m} type="button" onClick={()=>{if(!future){setViewM(i);setMode('days');}}}
+                    <button key={m} type="button" onClick={()=>{if(!disabledMonth){setViewM(i);setMode('days');}}}
                       style={{ ...btnReset,padding:'9px 4px',borderRadius:'9px',fontSize:'12.5px',fontWeight:active?700:400,
-                        background:active?'var(--accent)':'transparent',color:active?'#fff':future?'var(--text3)':'var(--text2)',cursor:future?'not-allowed':'pointer' }}
-                      onMouseEnter={e=>{if(!future&&!active)e.currentTarget.style.background='var(--glass-hover)';}}
+                        background:active?'var(--accent)':'transparent',color:active?'#fff':disabledMonth?'var(--text3)':'var(--text2)',cursor:disabledMonth?'not-allowed':'pointer' }}
+                      onMouseEnter={e=>{if(!disabledMonth&&!active)e.currentTarget.style.background='var(--glass-hover)';}}
                       onMouseLeave={e=>{if(!active)e.currentTarget.style.background='transparent';}}>
                       {m}
                     </button>

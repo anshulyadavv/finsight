@@ -14,9 +14,10 @@ interface SelectProps {
   options: Option[];
   placeholder?: string;
   label?: string;
+  forceDown?: boolean;
 }
 
-export function Select({ value, onChange, options, placeholder, label }: SelectProps) {
+export function Select({ value, onChange, options, placeholder, label, forceDown = false }: SelectProps) {
   const [open,   setOpen]   = useState(false);
   const ref      = useRef<HTMLDivElement>(null);
   const trigRef  = useRef<HTMLButtonElement>(null);
@@ -34,11 +35,15 @@ export function Select({ value, onChange, options, placeholder, label }: SelectP
 
   useEffect(() => {
     if (open && trigRef.current) {
-      const r  = trigRef.current.getBoundingClientRect();
-      const vh = window.innerHeight;
-      setAbove(r.bottom + 260 > vh);
+      if (forceDown) {
+        setAbove(false);
+      } else {
+        const r  = trigRef.current.getBoundingClientRect();
+        const vh = window.innerHeight;
+        setAbove(r.bottom + 260 > vh);
+      }
     }
-  }, [open]);
+  }, [open, forceDown]);
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>

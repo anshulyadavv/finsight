@@ -60,7 +60,7 @@ export default function Navbar({ activeTab, onTabChange }: Props) {
   }, []);
 
   // The actual functional tabs of the application
-  const tabs = ['Dashboard', 'Transactions', 'Insights', 'Predictions'];
+  const tabs = ['Dashboard', 'Assets', 'Goals', 'Predictions'];
 
   // ─── Search Logic ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function Navbar({ activeTab, onTabChange }: Props) {
     setSearching(true);
     try {
       const { data } = await searchApi.global(searchQuery);
-      setSearchResults(data);
+      setSearchResults(data?.data || data);
     } catch (e) {
       console.error(e);
     } finally {
@@ -300,7 +300,7 @@ export default function Navbar({ activeTab, onTabChange }: Props) {
                     <button onClick={markAllRead} className="text-[10px] font-bold text-purple-500 hover:text-purple-600">Mark all read</button>
                   )}
                 </div>
-                <div className="max-h-[350px] overflow-y-auto">
+                <div className="max-h-[350px] overflow-y-auto overscroll-contain pr-1 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-white/10" data-lenis-prevent>
                   {notifications.length === 0 ? (
                     <div className="py-12 text-center text-xs text-gray-400">No notifications yet</div>
                   ) : (

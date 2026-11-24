@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
 import { Select } from '@/components/ui/Select';
 
-export function TotalBalanceCard({ summary, loading }: any) {
+export function TotalBalanceCard({ summary, loading, onRefetch }: any) {
   const { fmt } = useCurrency();
   return (
     <motion.div
@@ -28,14 +28,24 @@ export function TotalBalanceCard({ summary, loading }: any) {
       </div>
 
       <div className="flex items-center gap-3 mt-8 relative z-10">
-        <button className="bg-white/20 dark:bg-black/20 text-white backdrop-blur-md border border-white/20 dark:border-white/10 px-6 py-3 rounded-full text-sm font-bold hover:brightness-110 transition shadow-lg">
+        <button 
+          onClick={() => alert('Transfer feature is active, proceeding to Gateway...')}
+          className="bg-white/20 dark:bg-black/20 text-white backdrop-blur-md border border-white/20 dark:border-white/10 px-6 py-3 rounded-full text-sm font-bold hover:brightness-110 transition shadow-lg"
+        >
           Transfer
         </button>
-        <button className="bg-white text-[#0A0E17] px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-50 transition shadow-lg flex items-center gap-2">
+        <button 
+          onClick={() => alert('Top Up request initialized.')}
+          className="bg-white text-[#0A0E17] px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-50 transition shadow-lg flex items-center gap-2"
+        >
           Top Up
         </button>
-        <button className="w-11 h-11 bg-white/20 text-white backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition shadow-lg ml-auto">
-          <RefreshCcw size={16} />
+        <button 
+          onClick={onRefetch}
+          className="w-11 h-11 bg-white/20 text-white backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition shadow-lg ml-auto"
+          title="Refresh Balance"
+        >
+          <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
     </motion.div>
@@ -89,8 +99,22 @@ export function RevenueFlowCard({ moneyFlow, loading }: any) {
         {loading || data.length === 0 ? <div className="w-full h-full flex items-center justify-center text-sm text-gray-400">No data</div> : (
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>
-              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} dy={10} />
-              <Tooltip formatter={(v: any) => fmt(v)} />
+              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: 'currentColor', opacity: 0.4 }} dy={10} />
+              <Tooltip 
+                cursor={{ fill: 'currentColor', opacity: 0.05 }}
+                contentStyle={{ 
+                  borderRadius: '16px', 
+                  border: '1px solid var(--glass-border)', 
+                  backgroundColor: 'var(--bg, #131823)', 
+                  backdropFilter: 'blur(10px)',
+                  boxShadow: 'var(--shadow)',
+                  color: 'var(--text-color, #ffffff)',
+                  fontSize: '12px',
+                  fontWeight: '700'
+                }}
+                itemStyle={{ color: 'inherit' }}
+                formatter={(v: any) => [fmt(v), 'Amount']}
+              />
               <Bar dataKey="income" fill="url(#purpleGradient)" radius={[6, 6, 6, 6]} barSize={25} />
               <Bar dataKey="expenses" fill="url(#greenGradient)" radius={[6, 6, 6, 6]} barSize={25} />
               <defs>
@@ -133,11 +157,24 @@ export function ExpenseSplitCard({ overview, summary, loading }: any) {
               <Pie data={cats.length ? cats : [{ amount: 1 }]} cx="50%" cy="50%" innerRadius={48} outerRadius={68} stroke="none" dataKey="amount" paddingAngle={2}>
                 {cats.length ? cats.map((_: any, i: number) => <Cell key={i} fill={COLS[i % COLS.length]} />) : <Cell fill="rgba(139,92,246,0.05)" />}
               </Pie>
+              <Tooltip 
+                contentStyle={{ 
+                  borderRadius: '16px', 
+                  border: '1px solid var(--glass-border)', 
+                  backgroundColor: 'var(--bg, #131823)', 
+                  backdropFilter: 'blur(10px)',
+                  boxShadow: 'var(--shadow)',
+                  color: 'var(--text-color, #ffffff)',
+                  fontSize: '12px',
+                  fontWeight: '700'
+                }}
+                formatter={(v: any) => fmt(v)}
+              />
             </PieChart>
           </ResponsiveContainer>
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-            <span className="text-[10px] text-gray-500 dark:text-gray-400">Total</span>
-            <span className="text-lg font-bold text-gray-900 dark:text-white">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+            <span className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-tighter">Total</span>
+            <span className="text-sm font-black text-gray-900 dark:text-white leading-none">
               {fmt(summary?.monthlyExpenses || 0)}
             </span>
           </div>
@@ -169,7 +206,9 @@ export function MyCardsList() {
   const [fBrand, setFBrand] = useState('visa');
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showFullDetails, setShowFullDetails] = useState(false);
+  const [isGlobalEditing, setIsGlobalEditing] = useState(false);
 
   useEffect(() => { fetchCards(); }, []);
 
@@ -269,11 +308,56 @@ export function MyCardsList() {
     }
   };
 
+  const startEditCard = (card: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingId(card.id);
+    setFBrand(card.brand);
+    setFNum(card.brand === 'amex' ? `3782821931${card.last4}` : `453288129903${card.last4}`); // Placeholder full number
+    setFExp(card.expiry);
+    setFName(card.nameOnCard);
+    setAdding(true);
+  };
+
+  const handleUpdate = async () => {
+    const gradients: any = {
+      visa: 'from-[#2563eb] to-[#1e40af]',
+      mastercard: 'from-[#ea580c] to-[#9a3412]',
+      amex: 'from-[#0891b2] to-[#155e75]',
+      rupay: 'from-[#1e1b4b] to-[#312e81]'
+    };
+
+    try {
+      await api.patch(`/cards/${editingId}`, {
+        brand: fBrand,
+        last4: fNum.slice(-4),
+        expiry: fExp,
+        nameOnCard: fName || 'Name',
+        gradientStart: gradients[fBrand]?.split(' ')[0] || 'from-gray-700',
+        gradientEnd: gradients[fBrand]?.split(' ')[1] || 'to-gray-900'
+      });
+      setAdding(false); setEditingId(null); setFNum(''); setFExp(''); setSelectedIdx(null);
+      fetchCards();
+    } catch (e) {
+      alert('Failed to update card.');
+    }
+  };
+
+  const handleAddOrUpdate = () => {
+    if (editingId) handleUpdate();
+    else handleAdd();
+  };
+
   return (
     <div className="flex flex-col gap-5 relative">
       <div className="flex items-center justify-between">
         <p className="font-bold text-xl text-gray-900 dark:text-white tracking-tight">My Wallet <span className="text-gray-400 dark:text-gray-500 text-sm ml-1 font-medium">{Array.isArray(cards) ? cards.length : 0} cards</span></p>
-        <button onClick={() => setAdding(!adding)} className="group bg-black dark:bg-white text-white dark:text-black px-5 py-2 rounded-full text-xs font-black flex items-center gap-2 shadow-xl hover:scale-105 transition-all active:scale-95 cursor-pointer uppercase tracking-widest">
+        <button 
+          onClick={() => {
+            if (adding) { setAdding(false); setEditingId(null); setFNum(''); setFExp(''); setFName(''); }
+            else setAdding(true);
+          }} 
+          className="group bg-black dark:bg-white text-white dark:text-black px-5 py-2 rounded-full text-xs font-black flex items-center gap-2 shadow-xl hover:scale-105 transition-all active:scale-95 cursor-pointer uppercase tracking-widest"
+        >
           {adding ? 'Cancel' : 'New Card'} <Plus size={14} className={adding ? "rotate-45 transition duration-500" : "transition duration-500 group-hover:rotate-90"} />
         </button>
       </div>
@@ -317,7 +401,9 @@ export function MyCardsList() {
               </div>
             </div>
 
-            <button onClick={handleAdd} className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black uppercase tracking-widest rounded-[20px] py-4 mt-2 shadow-xl hover:shadow-purple-500/20 hover:brightness-110 active:scale-95 transition-all">Save Card</button>
+            <button onClick={handleAddOrUpdate} className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black uppercase tracking-widest rounded-[20px] py-4 mt-2 shadow-xl hover:shadow-purple-500/20 hover:brightness-110 active:scale-95 transition-all">
+              {editingId ? 'Update Card' : 'Save Card'}
+            </button>
           </motion.div>
         ) : (
           <LayoutGroup>
@@ -421,8 +507,8 @@ export function MyCardsList() {
                         </div>
                       </div>
 
-                      {isExpanded && isSelected && (
-                        <div className="absolute top-6 right-6 flex items-center gap-2">
+                      {(isGlobalEditing || (isExpanded && isSelected)) && (
+                        <div className="absolute top-6 right-6 flex items-center gap-2 z-50">
                           <motion.button
                             initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
                             onClick={(e) => handleDeleteCard(card.id, e)}
@@ -433,7 +519,16 @@ export function MyCardsList() {
                           </motion.button>
                           <motion.button
                             initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
+                            onClick={(e) => startEditCard(card, e)}
+                            className="w-9 h-9 rounded-full bg-blue-500/20 backdrop-blur-xl border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40 transition-all active:scale-90 shadow-lg"
+                            title="Edit Card"
+                          >
+                            <Edit2 size={14} className="text-blue-100" />
+                          </motion.button>
+                          <motion.button
+                            initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }}
                             onClick={(e) => { e.stopPropagation(); setIsExpanded(false); setSelectedIdx(null); setShowFullDetails(false); }}
+                            style={{ display: isExpanded && isSelected ? 'flex' : 'none' }}
                             className="w-9 h-9 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all active:scale-90 shadow-lg"
                           >
                             <X size={16} className="text-white" />
@@ -542,6 +637,7 @@ export function SubscriptionsList() {
     setFName(preset.name);
     setFCost((isINR ? preset.prices.INR : preset.prices.USD).toString());
     if (preset.name === 'Amazon Prime' && isINR) setFCycle('yearly');
+    else if (preset.name === 'Amazon Prime' && !isINR) setFCycle('monthly');
   };
 
   const getBrandIcon = (name: string) => {
@@ -633,6 +729,67 @@ export function SubscriptionsList() {
               </div>
             </div>
           </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+export function UpcomingDebitsCard() {
+  const { fmt } = useCurrency();
+  const [subs, setSubs] = useState<any[]>([]);
+  
+  useEffect(() => {
+    api.get('/subscriptions').then(r => setSubs(Array.isArray(r.data?.data || r.data) ? (r.data?.data || r.data) : []));
+  }, []);
+
+  const getUpcoming = () => {
+    const today = new Date();
+    // Normalize today to start of day
+    today.setHours(0,0,0,0);
+    const curMonth = today.getMonth();
+    const curYear = today.getFullYear();
+    const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+    
+    return subs.map(sub => {
+      let bDay = sub.billingDay;
+      if (bDay > daysInMonth) bDay = daysInMonth; 
+      
+      let nextDate = new Date(curYear, curMonth, bDay);
+      if (nextDate < today && nextDate.getDate() !== today.getDate()) {
+        const nextMonth = curMonth + 1;
+        const daysInNextMonth = new Date(curYear, nextMonth + 1, 0).getDate();
+        let nextBDay = sub.billingDay;
+        // Leap year and edge case handling
+        if (nextBDay > daysInNextMonth) nextBDay = daysInNextMonth;
+        nextDate = new Date(curYear, nextMonth, nextBDay);
+      }
+      
+      const diffTime = nextDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return { ...sub, nextDate, diffDays };
+    }).filter(s => s.diffDays >= 0 && s.diffDays <= 7).sort((a,b) => a.diffDays - b.diffDays);
+  };
+  
+  const upcoming = getUpcoming();
+
+  if (!upcoming.length) return null;
+
+  return (
+    <div className="flex flex-col gap-3 mt-4">
+      <div className="flex items-center justify-between">
+        <p className="font-bold text-sm text-gray-900 dark:text-white tracking-widest uppercase opacity-60">Upcoming Debits (7 Days)</p>
+      </div>
+      <div className="flex flex-col gap-2">
+        {upcoming.map(u => (
+          <div key={u.id} className="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-2xl p-3 flex justify-between items-center shadow-sm">
+             <div className="flex flex-col">
+               <span className="text-[12px] font-bold text-rose-900 dark:text-rose-100">{u.name}</span>
+               <span className="text-[9px] font-bold uppercase text-rose-500 dark:text-rose-400">{u.diffDays === 0 ? 'Today' : 'In ' + u.diffDays + ' Days'}</span>
+             </div>
+             <span className="text-[13px] font-black text-rose-600 dark:text-rose-300">{fmt(u.cost)}</span>
+          </div>
         ))}
       </div>
     </div>

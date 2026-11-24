@@ -103,7 +103,7 @@ export default function SupportPage() {
       <header className="relative z-50 pt-8 px-6">
         <div className="flex items-center justify-between max-w-[1200px] mx-auto pointer-events-auto">
           <Link href="/" className="z-10 group focus:outline-none">
-            <Logo />
+            <Logo variant="light" />
           </Link>
           <div className="flex items-center gap-8 z-10">
             <Link href="/" className="text-[14px] font-bold text-gray-500 hover:text-gray-900 flex items-center gap-2 transition-colors">
