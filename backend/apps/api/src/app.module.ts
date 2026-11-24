@@ -21,12 +21,20 @@ import { CategorizationModule } from './categorization/categorization.module';
 import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import { CardsModule } from './cards/cards.module';
 import { SearchModule } from './search/search.module';
+import { AssetsModule } from './assets/assets.module';
+import { GoalsModule } from './goals/goals.module';
 import { HealthController } from './common/controllers/health.controller';
 import { Transaction } from './transactions/transaction.entity';
 import { Category } from './categories/category.entity';
 import { Card } from './cards/card.entity';
 import { Notification } from './notifications/notification.entity';
 import { User } from './users/user.entity';
+import { Asset } from './assets/asset.entity';
+import { Liability } from './assets/liability.entity';
+import { IncomeSource } from './assets/income-source.entity';
+import { Goal } from './goals/goal.entity';
+import { GoalMember } from './goals/goal-member.entity';
+import { GoalContribution } from './goals/goal-contribution.entity';
 
 import databaseConfig from './config/database.config';
 import redisConfig from './config/redis.config';
@@ -113,6 +121,8 @@ import mlConfig from './config/ml.config';
     SubscriptionsModule,
     CardsModule,
     SearchModule,
+    AssetsModule,
+    GoalsModule,
   ],
   controllers: [HealthController],
 })

@@ -111,6 +111,38 @@ export class NotificationsService {
     }
   }
 
+  async sendRecurringDebitAlert(userId: string, subscription: any) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) return;
+
+    const message = `Upcoming recurring debit of ₹${Number(subscription.cost).toLocaleString('en-IN')} for ${subscription.name} in 2 days.`;
+
+    // Persist in-app notification
+    await this.create(user, {
+      title: '📅 Upcoming Payment',
+      message: message,
+      type: NotificationType.INSIGHT,
+      metadata: { subscriptionId: subscription.id },
+    });
+
+    if (user.notificationPush && user.pushSubscription) {
+      await this.sendPush(user.pushSubscription, {
+        title: '📅 Upcoming Payment',
+        body: message,
+        icon: '/icons/calendar.png',
+        data: { type: 'subscription', id: subscription.id },
+      });
+    }
+
+    if (user.notificationEmail) {
+      await this.sendEmail(user.email, `📅 Upcoming Payment Alert: ${subscription.name}`, `
+        <h2>Payment Reminder</h2>
+        <p>${message}</p>
+        <p>Ensure you have sufficient balance in your account.</p>
+      `);
+    }
+  }
+
   // ─── Internal Helpers ────────────────────────────────────────────────
 
   private async sendEmail(to: string, subject: string, html: string) {

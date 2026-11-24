@@ -1,6 +1,6 @@
-# FinIQ Backend — Personal Finance Intelligence Platform
+# FinSight Backend — Personal Finance Intelligence Platform
 
-Production-ready backend for the FinIQ fintech dashboard.
+Production-ready backend for the FinSight fintech dashboard.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ Production-ready backend for the FinIQ fintech dashboard.
 └────────────────────────────┬────────────────────────────────────┘
                              │
               ┌──────────────▼──────────────┐
-              │      NestJS API  :3001       │
+              │      NestJS API  :3001      │
               │  ┌──────────────────────┐   │
               │  │  Auth Module (JWT)   │   │
               │  │  Transactions Module │   │
@@ -26,13 +26,13 @@ Production-ready backend for the FinIQ fintech dashboard.
               └───┬──────────┬──────────────┘
                   │          │
      ┌────────────▼──┐  ┌───▼──────────────┐
-     │  PostgreSQL   │  │  Redis + BullMQ   │
-     │  :5432        │  │  :6379            │
-     │  ─────────    │  │  ─────────────    │
-     │  users        │  │  Dashboard cache  │
-     │  transactions │  │  Insights queue   │
-     │  categories   │  │  Anomaly queue    │
-     │  budgets      │  │  ML training q    │
+     │  PostgreSQL   │  │  Redis + BullMQ  │
+     │  :5432        │  │  :6379           │
+     │  ─────────    │  │  ─────────────   │
+     │  users        │  │  Dashboard cache │
+     │  transactions │  │  Insights queue  │
+     │  categories   │  │  Anomaly queue   │
+     │  budgets      │  │  ML training q   │
      │  insights     │  └──────────────────┘
      │  anomalies    │
      └───────────────┘

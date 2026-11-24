@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan } from 'typeorm';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { Insight, InsightType, InsightSeverity } from './insight.entity';
@@ -107,7 +107,10 @@ export class InsightsService {
     
     // Deduplicate against insights generated in the last 7 days
     const recent = await this.insightRepo.find({
-      where: { userId, createdAt: { $gt: new Date(Date.now() - 7 * 86400000) } as any },
+      where: { 
+        userId, 
+        createdAt: MoreThan(new Date(Date.now() - 7 * 86400000))
+      },
       select: ['message'],
     });
     const recentSet = new Set(recent.map(r => r.message));

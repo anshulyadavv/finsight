@@ -1,6 +1,7 @@
-// insights.controller.ts
-import { Controller, Get, Patch, Delete, Param, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { InjectQueue } from '@nestjs/bull';
+import { Queue } from 'bull';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { User } from '../users/user.entity';
@@ -11,7 +12,17 @@ import { InsightsService } from './insights.service';
 @UseGuards(JwtAuthGuard)
 @Controller('insights')
 export class InsightsController {
-  constructor(private readonly svc: InsightsService) {}
+  constructor(
+    private readonly svc: InsightsService,
+    @InjectQueue('insights') private readonly queue: Queue,
+  ) {}
+
+  @Post('refresh')
+  @ApiOperation({ summary: 'Manually trigger a fresh analysis of your financial data' })
+  async refresh(@CurrentUser() user: User) {
+    await this.queue.add('generate', { userId: user.id });
+    return { message: 'Insight generation scheduled' };
+  }
 
   @Get()
   @ApiOperation({ summary: 'Get AI-generated insights for the current user' })

@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Subscription } from './subscription.entity';
 import { Transaction, TransactionType, PaymentMethod } from '../transactions/transaction.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class SubscriptionsService {
@@ -14,6 +15,7 @@ export class SubscriptionsService {
     private subRepo: Repository<Subscription>,
     @InjectRepository(Transaction)
     private txRepo: Repository<Transaction>,
+    private notifySvc: NotificationsService,
   ) {}
 
   async findAll(userId: string): Promise<Subscription[]> {
@@ -49,6 +51,24 @@ export class SubscriptionsService {
     for (const sub of subs) {
       if (this.shouldBill(sub, today)) {
         await this.createTransactionForSub(sub, today);
+      }
+    }
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async sendReminders() {
+    this.logger.log('Checking for upcoming subscription renewals...');
+    const inTwoDays = new Date();
+    inTwoDays.setDate(inTwoDays.getDate() + 2);
+    const day = inTwoDays.getDate();
+
+    // Find subs billing in 2 days
+    const subs = await this.subRepo.find({ where: { active: true, billingDay: day } });
+
+    for (const sub of subs) {
+      // Check if it's actually due (match cycle)
+      if (this.shouldBill(sub, inTwoDays)) {
+        await this.notifySvc.sendRecurringDebitAlert(sub.userId, sub);
       }
     }
   }
